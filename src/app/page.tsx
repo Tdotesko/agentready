@@ -118,7 +118,15 @@ export default function Home() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [user, setUser] = useState<{ email: string; plan?: string } | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then(res => {
+      if (res.ok) return res.json();
+      return null;
+    }).then(data => { if (data?.email) setUser(data); }).catch(() => {});
+  }, []);
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
@@ -152,7 +160,11 @@ export default function Home() {
           </a>
           <div className="flex items-center gap-5">
             <a href="#pricing" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition">Pricing</a>
-            <a href="/login" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition">Sign in</a>
+            {user ? (
+              <a href="/dashboard" className="text-xs text-[var(--accent)] hover:brightness-110 transition">Dashboard</a>
+            ) : (
+              <a href="/login" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition">Sign in</a>
+            )}
             {result && (
               <button onClick={share} className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition cursor-pointer">
                 {copied ? "Copied!" : "Share"}
@@ -264,7 +276,13 @@ export default function Home() {
                     Enterprise $399/mo
                   </a>
                 </div>
-                <p className="text-[10px] text-[var(--text-dim)] mt-3">Already have an account? <a href="/login" className="text-[var(--accent)] hover:underline">Sign in</a></p>
+                {user ? (
+                  <p className="text-[10px] text-[var(--text-dim)] mt-3">
+                    <a href="/dashboard" className="text-[var(--accent)] hover:underline">Go to your dashboard</a> to run a full deep scan.
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-[var(--text-dim)] mt-3">Already have an account? <a href="/login" className="text-[var(--accent)] hover:underline">Sign in</a></p>
+                )}
               </div>
             </div>
 
