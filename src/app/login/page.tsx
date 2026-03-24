@@ -42,7 +42,10 @@ export default function LoginPage() {
                 placeholder="you@company.com" />
             </div>
             <div>
-              <label htmlFor="pass" className="text-xs font-medium text-[var(--text-secondary)] block mb-2">Password</label>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="pass" className="text-xs font-medium text-[var(--text-secondary)]">Password</label>
+                <a href="/forgot-password" className="text-xs text-[var(--accent)] hover:underline">Forgot password?</a>
+              </div>
               <input id="pass" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
                 className="w-full rounded-xl bg-[var(--bg-raised)] border border-[var(--border-light)] px-4 py-3 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)] focus:shadow-[0_0_0_3px_var(--accent-soft)] transition"
                 placeholder="Your password" />

@@ -13,5 +13,6 @@ export async function GET() {
     plan: user.plan,
     subscriptionStatus: user.subscriptionStatus,
     isAdmin: user.isAdmin,
+    emailVerified: user.emailVerified,
   });
 }

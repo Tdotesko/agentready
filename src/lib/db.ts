@@ -75,11 +75,12 @@ export async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_users_stripe ON users(stripe_customer_id);
     CREATE INDEX IF NOT EXISTS idx_scans_user ON scans(user_id);
 
-    -- Migration: add is_admin column if it doesn't exist
-    DO $$ BEGIN
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
-    EXCEPTION WHEN duplicate_column THEN NULL;
-    END $$;
+    -- Migrations
+    DO $$ BEGIN ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE; EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ; EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE; EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 
     -- Lead generation tables
     CREATE TABLE IF NOT EXISTS prospects (

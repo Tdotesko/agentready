@@ -10,6 +10,10 @@ export interface User {
   subscriptionId?: string;
   subscriptionStatus?: string;
   isAdmin: boolean;
+  emailVerified: boolean;
+  resetToken?: string;
+  resetTokenExpires?: string;
+  verifyToken?: string;
   createdAt: string;
 }
 
@@ -31,6 +35,10 @@ interface UserRow {
   subscription_id: string | null;
   subscription_status: string | null;
   is_admin: boolean;
+  email_verified: boolean;
+  reset_token: string | null;
+  reset_token_expires: string | null;
+  verify_token: string | null;
   created_at: string;
 }
 
@@ -44,8 +52,42 @@ function rowToUser(row: UserRow): User {
     subscriptionId: row.subscription_id || undefined,
     subscriptionStatus: row.subscription_status || undefined,
     isAdmin: row.is_admin || false,
+    emailVerified: row.email_verified || false,
+    resetToken: row.reset_token || undefined,
+    resetTokenExpires: row.reset_token_expires || undefined,
+    verifyToken: row.verify_token || undefined,
     createdAt: row.created_at,
   };
+}
+
+// Password reset
+export async function setResetToken(email: string, token: string, expires: Date) {
+  await query("UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3", [token, expires.toISOString(), email.toLowerCase()]);
+}
+
+export async function findUserByResetToken(token: string): Promise<User | null> {
+  const row = await queryOne<UserRow>("SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()", [token]);
+  return row ? rowToUser(row) : null;
+}
+
+export async function clearResetToken(userId: string) {
+  await query("UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE id = $1", [userId]);
+}
+
+export async function updatePassword(userId: string, passwordHash: string) {
+  await query("UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2", [passwordHash, userId]);
+}
+
+// Email verification
+export async function setVerifyToken(userId: string, token: string) {
+  await query("UPDATE users SET verify_token = $1 WHERE id = $2", [token, userId]);
+}
+
+export async function verifyEmail(token: string): Promise<boolean> {
+  const user = await queryOne<UserRow>("SELECT * FROM users WHERE verify_token = $1", [token]);
+  if (!user) return false;
+  await query("UPDATE users SET email_verified = TRUE, verify_token = NULL WHERE id = $1", [user.id]);
+  return true;
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {
