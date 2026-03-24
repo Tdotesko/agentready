@@ -213,7 +213,7 @@ function DashboardInner() {
   const [viewResult, setViewResult] = useState<DeepScanResult | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "actions" | "pages" | "compare">("overview");
   const [portalLoading, setPortalLoading] = useState(false);
-  const [navSection, setNavSection] = useState<"scan" | "history" | "compare">("scan");
+  const [navSection, setNavSection] = useState<"scan" | "history" | "compare" | "stores" | "apikeys" | "webhooks">("scan");
 
   const [freeScanUrl, setFreeScanUrl] = useState("");
   const [freeScanning, setFreeScanning] = useState(false);
@@ -226,9 +226,22 @@ function DashboardInner() {
   const [compResult, setCompResult] = useState<Record<string, unknown> | null>(null);
   const [compError, setCompError] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+
+  // Stores, API keys, webhooks
+  const [stores, setStores] = useState<Array<{ id: number; url: string; name: string; autoRescan: boolean; rescanInterval: string; lastScore: number | null }>>([]);
+  const [apiKeys, setApiKeys] = useState<Array<{ id: number; keyPrefix: string; name: string; lastUsedAt: string | null; createdAt: string }>>([]);
+  const [webhooks, setWebhooks] = useState<Array<{ id: number; url: string; events: string[]; isActive: boolean }>>([]);
+  const [newStoreUrl, setNewStoreUrl] = useState("");
+  const [newKeyName, setNewKeyName] = useState("");
+  const [newWebhookUrl, setNewWebhookUrl] = useState("");
+  const [newApiKey, setNewApiKey] = useState("");
 
   const isActive = user?.subscriptionStatus === "active" || user?.subscriptionStatus === "trialing";
   const canCompare = isActive && ["pro", "agency", "business", "enterprise"].includes(user?.plan || "");
+  const isEnterprise = ["enterprise", "agency"].includes(user?.plan || "");
+  const canWebhook = ["business", "enterprise", "pro", "agency"].includes(user?.plan || "");
   const isFree = !isActive && !justUpgraded;
 
   const loadData = useCallback(async () => {
@@ -239,6 +252,9 @@ function DashboardInner() {
       setUser(userData);
       if (userData.subscriptionStatus === "active" || userData.subscriptionStatus === "trialing") {
         try { const r = await fetch("/api/dashboard/scans"); if (r.ok) setScans(await r.json()); } catch {}
+        try { const r = await fetch("/api/dashboard/stores"); if (r.ok) setStores(await r.json()); } catch {}
+        try { const r = await fetch("/api/v1/keys"); if (r.ok) setApiKeys(await r.json()); } catch {}
+        try { const r = await fetch("/api/dashboard/webhooks"); if (r.ok) setWebhooks(await r.json()); } catch {}
       }
     } catch { window.location.href = "/login"; }
     finally { setLoading(false); }
@@ -365,7 +381,10 @@ function DashboardInner() {
           {[
             { id: "scan" as const, label: isFree ? "Overview" : "New Scan", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
             ...(isActive ? [{ id: "history" as const, label: "Scan History", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" }] : []),
+            ...(isActive ? [{ id: "stores" as const, label: "My Stores", icon: "M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.15c0 .415.336.75.75.75z" }] : []),
             ...(canCompare ? [{ id: "compare" as const, label: "Compare", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" }] : []),
+            ...(isEnterprise ? [{ id: "apikeys" as const, label: "API Keys", icon: "M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" }] : []),
+            ...(canWebhook ? [{ id: "webhooks" as const, label: "Webhooks", icon: "M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" }] : []),
           ].map((item) => (
             <button key={item.id} onClick={() => { setNavSection(item.id); setViewResult(null); }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer ${
@@ -405,7 +424,10 @@ function DashboardInner() {
         </div>
         <div className="px-5 py-3 border-t border-[var(--border)]">
           <p className="text-[10px] text-[var(--text-dim)] truncate">{user?.email}</p>
-          <p className={`text-[10px] ${isActive ? "text-[var(--accent)]" : "text-[var(--text-dim)]"}`}>{isActive ? PLAN_NAMES[user?.plan || ""] || "Active" : "Free account"}</p>
+          <div className="flex items-center justify-between">
+            <p className={`text-[10px] ${isActive ? "text-[var(--accent)]" : "text-[var(--text-dim)]"}`}>{isActive ? PLAN_NAMES[user?.plan || ""] || "Active" : "Free account"}</p>
+            <button onClick={() => setShowDeleteModal(true)} className="text-[9px] text-[var(--text-dim)] hover:text-[var(--red)] cursor-pointer">Delete account</button>
+          </div>
         </div>
       </aside>
 
@@ -428,7 +450,10 @@ function DashboardInner() {
           {[
             { id: "scan" as const, label: isFree ? "Overview" : "Scan" },
             ...(isActive ? [{ id: "history" as const, label: "History" }] : []),
+            ...(isActive ? [{ id: "stores" as const, label: "Stores" }] : []),
             ...(canCompare ? [{ id: "compare" as const, label: "Compare" }] : []),
+            ...(isEnterprise ? [{ id: "apikeys" as const, label: "API" }] : []),
+            ...(canWebhook ? [{ id: "webhooks" as const, label: "Hooks" }] : []),
           ].map((t) => (
             <button key={t.id} onClick={() => { setNavSection(t.id); setViewResult(null); }}
               className={`px-4 py-2.5 text-xs font-medium border-b-2 transition cursor-pointer shrink-0 ${
@@ -950,6 +975,150 @@ function DashboardInner() {
               )}
             </>
           )}
+
+          {/* ═══ STORES SECTION ═══ */}
+          {navSection === "stores" && isActive && (
+            <>
+              <h2 className="text-lg font-bold text-white mb-1">My Stores</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-6">Add stores to monitor. Enable auto-rescan to track your score over time.</p>
+
+              <div className="surface rounded-xl p-5 mb-6">
+                <form onSubmit={async (e) => { e.preventDefault(); if (!newStoreUrl.trim()) return;
+                  await fetch("/api/dashboard/stores", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newStoreUrl, autoRescan: true }) });
+                  setNewStoreUrl(""); loadData(); }} className="flex gap-2">
+                  <input type="text" value={newStoreUrl} onChange={(e) => setNewStoreUrl(e.target.value)} placeholder="yourstore.com"
+                    className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" />
+                  <button type="submit" className="px-5 py-2.5 rounded-lg btn-primary text-sm cursor-pointer shrink-0">Add store</button>
+                </form>
+              </div>
+
+              <div className="surface rounded-xl overflow-hidden">
+                {stores.length === 0 ? (
+                  <div className="px-6 py-12 text-center">
+                    <p className="text-sm text-[var(--text-dim)]">No stores added yet. Add your first store above.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[var(--border)]">
+                    {stores.map((s) => (
+                      <div key={s.id} className="px-5 py-3 flex items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-[var(--text)] truncate">{s.name || s.url}</p>
+                          <p className="text-[10px] text-[var(--text-dim)]">{s.url}</p>
+                        </div>
+                        {s.lastScore !== null && (
+                          <span className="text-lg font-mono font-bold" style={{ color: s.lastScore >= 75 ? "var(--green)" : s.lastScore >= 45 ? "var(--yellow)" : "var(--red)" }}>{s.lastScore}</span>
+                        )}
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${s.autoRescan ? "bg-[var(--green-soft)] text-[var(--green)]" : "bg-[rgba(255,255,255,0.04)] text-[var(--text-dim)]"}`}>
+                          {s.autoRescan ? `Auto: ${s.rescanInterval}` : "Manual"}
+                        </span>
+                        <button onClick={async () => { await fetch("/api/dashboard/stores", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id }) }); loadData(); }}
+                          className="text-[10px] text-[var(--red)] hover:underline cursor-pointer">Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ═══ API KEYS SECTION ═══ */}
+          {navSection === "apikeys" && isEnterprise && (
+            <>
+              <h2 className="text-lg font-bold text-white mb-1">API Keys</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-6">Use the REST API to scan stores programmatically. Send requests to <code className="text-xs bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">POST /api/v1/scan</code> with your API key.</p>
+
+              <div className="surface rounded-xl p-5 mb-6">
+                <form onSubmit={async (e) => { e.preventDefault();
+                  const res = await fetch("/api/v1/keys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newKeyName || "Default" }) });
+                  const data = await res.json();
+                  if (data.key) { setNewApiKey(data.key); setNewKeyName(""); loadData(); }
+                }} className="flex gap-2">
+                  <input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Key name (optional)"
+                    className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" />
+                  <button type="submit" className="px-5 py-2.5 rounded-lg btn-primary text-sm cursor-pointer shrink-0">Generate key</button>
+                </form>
+                {newApiKey && (
+                  <div className="mt-3 p-3 rounded-lg bg-[var(--accent-soft)] border border-[var(--accent-border)]">
+                    <p className="text-[10px] text-[var(--accent)] mb-1">Copy this key now. You won&apos;t see it again.</p>
+                    <code className="text-xs text-white break-all select-all">{newApiKey}</code>
+                  </div>
+                )}
+              </div>
+
+              <div className="surface rounded-xl p-5 mb-6">
+                <p className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-3">Usage example</p>
+                <pre className="text-[11px] text-[var(--text-secondary)] bg-[var(--bg)] rounded-lg p-4 overflow-x-auto">
+{`curl -X POST https://cartparse.com/api/v1/scan \\
+  -H "Authorization: Bearer cp_your_key_here" \\
+  -H "Content-Type: application/json" \\
+  -d '{"url": "yourstore.com"}'`}
+                </pre>
+              </div>
+
+              <div className="surface rounded-xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-[var(--border)]">
+                  <p className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest">Your keys</p>
+                </div>
+                {apiKeys.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-[var(--text-dim)]">No API keys yet.</p>
+                ) : (
+                  <div className="divide-y divide-[var(--border)]">
+                    {apiKeys.map((k) => (
+                      <div key={k.id} className="px-5 py-3 flex items-center gap-4">
+                        <div className="flex-1">
+                          <p className="text-sm text-[var(--text)]">{k.name}</p>
+                          <p className="text-[10px] text-[var(--text-dim)] font-mono">{k.keyPrefix}...</p>
+                        </div>
+                        <span className="text-[10px] text-[var(--text-dim)]">{k.lastUsedAt ? `Used ${new Date(k.lastUsedAt).toLocaleDateString()}` : "Never used"}</span>
+                        <button onClick={async () => { await fetch("/api/v1/keys", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: k.id }) }); loadData(); }}
+                          className="text-[10px] text-[var(--red)] hover:underline cursor-pointer">Revoke</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ═══ WEBHOOKS SECTION ═══ */}
+          {navSection === "webhooks" && canWebhook && (
+            <>
+              <h2 className="text-lg font-bold text-white mb-1">Webhooks</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-6">Get notified when scans complete. We&apos;ll POST the scan result to your URL.</p>
+
+              <div className="surface rounded-xl p-5 mb-6">
+                <form onSubmit={async (e) => { e.preventDefault(); if (!newWebhookUrl.trim()) return;
+                  await fetch("/api/dashboard/webhooks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newWebhookUrl }) });
+                  setNewWebhookUrl(""); loadData(); }} className="flex gap-2">
+                  <input type="url" value={newWebhookUrl} onChange={(e) => setNewWebhookUrl(e.target.value)} placeholder="https://your-server.com/webhook"
+                    className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" />
+                  <button type="submit" className="px-5 py-2.5 rounded-lg btn-primary text-sm cursor-pointer shrink-0">Add webhook</button>
+                </form>
+              </div>
+
+              <div className="surface rounded-xl overflow-hidden">
+                {webhooks.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-[var(--text-dim)]">No webhooks configured.</p>
+                ) : (
+                  <div className="divide-y divide-[var(--border)]">
+                    {webhooks.map((w) => (
+                      <div key={w.id} className="px-5 py-3 flex items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-[var(--text)] font-mono truncate">{w.url}</p>
+                          <p className="text-[10px] text-[var(--text-dim)]">Events: {w.events.join(", ")}</p>
+                        </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${w.isActive ? "bg-[var(--green-soft)] text-[var(--green)]" : "bg-[rgba(255,255,255,0.04)] text-[var(--text-dim)]"}`}>
+                          {w.isActive ? "Active" : "Inactive"}
+                        </span>
+                        <button onClick={async () => { await fetch("/api/dashboard/webhooks", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: w.id }) }); loadData(); }}
+                          className="text-[10px] text-[var(--red)] hover:underline cursor-pointer">Delete</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -993,6 +1162,30 @@ function DashboardInner() {
             </div>
 
             <p className="text-[11px] text-[var(--text-dim)] text-center mt-5">Cancel anytime. You&apos;ll be taken to a secure Stripe checkout.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Delete Account Modal ─── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowDeleteModal(false); setDeleteConfirm(""); }} />
+          <div className="relative bg-[var(--bg-raised)] border border-[var(--border)] rounded-2xl p-6 max-w-sm w-full shadow-2xl fade-up">
+            <h2 className="text-lg font-bold text-white mb-2">Delete your account</h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">This will permanently delete your account, all scan data, stores, and API keys. This cannot be undone.</p>
+            <p className="text-xs text-[var(--text-dim)] mb-3">Type <strong className="text-white">DELETE</strong> to confirm.</p>
+            <input type="text" value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder="Type DELETE"
+              className="w-full rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--red)] mb-4" />
+            <div className="flex gap-2">
+              <button onClick={() => { setShowDeleteModal(false); setDeleteConfirm(""); }}
+                className="flex-1 py-2.5 rounded-lg btn-secondary text-sm cursor-pointer">Cancel</button>
+              <button onClick={async () => {
+                if (deleteConfirm !== "DELETE") return;
+                await fetch("/api/auth/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: "DELETE" }) });
+                window.location.href = "/";
+              }} disabled={deleteConfirm !== "DELETE"}
+                className="flex-1 py-2.5 rounded-lg bg-[var(--red)] text-white text-sm font-medium disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed">Delete forever</button>
+            </div>
           </div>
         </div>
       )}

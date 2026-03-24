@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     grade: prospect.grade || "?",
     platform: platformDisplay,
     findings_list: "<li>Details available in full scan report</li>",
-    unsubscribe_url: "https://cartparse.com",
+    unsubscribe_url: "https://cartparse.com/unsubscribe",
   };
 
   await queueColdOutreach(prospect.id, prospect.email, vars);
