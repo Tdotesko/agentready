@@ -37,7 +37,6 @@ yarn-error.log*
 .vercel
 
 # lead data
-/data
 
 # typescript
 *.tsbuildinfo
