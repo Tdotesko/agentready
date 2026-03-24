@@ -5,14 +5,20 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
   max: 10,
   idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  statement_timeout: 15000,
 });
 
 let initialized = false;
+let initPromise: Promise<void> | null = null;
 
 async function ensureInit() {
   if (initialized) return;
-  await initDb();
-  initialized = true;
+  // Use a single promise to prevent concurrent initialization
+  if (!initPromise) {
+    initPromise = initDb().then(() => { initialized = true; }).catch((err) => { initPromise = null; throw err; });
+  }
+  await initPromise;
 }
 
 export async function query<T = Record<string, unknown>>(

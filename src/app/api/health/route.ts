@@ -8,16 +8,16 @@ export async function GET() {
     try {
       await initDb();
       dbInitialized = true;
-    } catch (err) {
+    } catch {
       return NextResponse.json(
-        { status: "error", error: "Database not ready", detail: String(err) },
+        { status: "error", message: "Service temporarily unavailable" },
         { status: 503 }
       );
     }
   }
 
   return NextResponse.json(
-    { status: "ok", db: "connected", timestamp: new Date().toISOString() },
+    { status: "ok", timestamp: new Date().toISOString() },
     { status: 200 }
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser, hasActiveSub } from "@/lib/auth";
 import { deepScan } from "@/lib/deep-scanner";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { Plan } from "@/lib/config";
 
 const COMPARE_PLANS: Plan[] = ["pro", "agency", "business", "enterprise"];
@@ -13,8 +14,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Competitor comparison requires a Business or Enterprise plan." }, { status: 403 });
   }
 
+  const { allowed } = checkRateLimit(`compare-${user.id}`);
+  if (!allowed) return NextResponse.json({ error: "Too many comparisons. Wait a minute." }, { status: 429 });
+
   const { myUrl, competitorUrl } = await req.json();
-  if (!myUrl || !competitorUrl) return NextResponse.json({ error: "Both URLs required." }, { status: 400 });
+  if (!myUrl || !competitorUrl || typeof myUrl !== "string" || typeof competitorUrl !== "string") {
+    return NextResponse.json({ error: "Both URLs required." }, { status: 400 });
+  }
 
   try {
     const [myResult, competitorResult] = await Promise.all([

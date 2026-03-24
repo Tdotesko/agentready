@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findUserByEmail, createUser } from "@/lib/users";
 import { hashPassword, createToken } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = checkRateLimit(`signup-${ip}`);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many signup attempts. Wait a minute." }, { status: 429 });
+  }
+
   try {
     const { email, password } = await req.json();
 
