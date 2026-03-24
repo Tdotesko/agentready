@@ -224,6 +224,7 @@ function DashboardInner() {
   const [comparing, setComparing] = useState(false);
   const [compResult, setCompResult] = useState<Record<string, unknown> | null>(null);
   const [compError, setCompError] = useState("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const isActive = user?.subscriptionStatus === "active" || user?.subscriptionStatus === "trialing";
   const canCompare = isActive && ["pro", "agency", "business", "enterprise"].includes(user?.plan || "");
@@ -373,7 +374,7 @@ function DashboardInner() {
               {portalLoading ? "Loading..." : "Billing"}
             </button>
           ) : (
-            <button onClick={() => handleUpgrade("business")}
+            <button onClick={() => setShowUpgradeModal(true)}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--accent)] hover:bg-[var(--accent-soft)] transition cursor-pointer">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
               Upgrade
@@ -569,7 +570,7 @@ function DashboardInner() {
 
                   <div className="text-center">
                     <p className="text-xs text-[var(--text-secondary)] mb-3">Upgrade to see every finding, get fix code, and track your score over time.</p>
-                    <button onClick={() => handleUpgrade("growth")} className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition cursor-pointer">Unlock full report</button>
+                    <button onClick={() => setShowUpgradeModal(true)} className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition cursor-pointer">Unlock full report</button>
                   </div>
                 </div>
               )}
@@ -803,6 +804,50 @@ function DashboardInner() {
           )}
         </div>
       </div>
+
+      {/* ─── Upgrade Modal ─── */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowUpgradeModal(false)} />
+          <div className="relative bg-[var(--bg-raised)] border border-[var(--border)] rounded-2xl p-6 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl fade-up">
+            <button onClick={() => setShowUpgradeModal(false)}
+              className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] cursor-pointer">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            <h2 className="text-lg font-bold text-white mb-1">Pick your plan</h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-6">All plans include full scan reports, fix code, and exportable reports.</p>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { name: "Growth", price: "$49", plan: "growth", desc: "For store owners getting started", features: ["5 stores", "Multi-page deep scan", "Platform-specific fix code", "Priority action plan", "Downloadable reports", "Weekly rescans"] },
+                { name: "Business", price: "$149", plan: "business", pop: true, desc: "For serious sellers and teams", features: ["25 stores", "Everything in Growth", "Competitor comparison", "Score history tracking", "Daily monitoring", "Email alerts"] },
+                { name: "Enterprise", price: "$399", plan: "enterprise", desc: "For agencies managing clients", features: ["Unlimited stores", "Everything in Business", "White-label reports", "Bulk scanning API", "Team seats", "Priority support"] },
+              ].map((tier) => (
+                <div key={tier.plan} className={`rounded-xl p-5 flex flex-col relative ${tier.pop ? "bg-[var(--bg-elevated)] ring-1 ring-[var(--accent-border)]" : "bg-[var(--bg-elevated)] border border-[var(--border)]"}`}>
+                  {tier.pop && <span className="absolute -top-2.5 left-4 text-[9px] font-semibold uppercase tracking-wider bg-[var(--accent)] text-black px-2.5 py-0.5 rounded-full">Popular</span>}
+                  <p className="text-sm font-semibold text-white">{tier.name}</p>
+                  <p className="text-2xl font-bold text-white mt-1">{tier.price}<span className="text-xs text-[var(--text-dim)] font-normal">/mo</span></p>
+                  <p className="text-[11px] text-[var(--text-dim)] mt-1 mb-3">{tier.desc}</p>
+                  <ul className="space-y-1.5 mb-5 flex-1">
+                    {tier.features.map((f, i) => (
+                      <li key={i} className="text-xs text-[var(--text-secondary)] flex gap-2">
+                        <span className="text-[var(--accent)] shrink-0">&#10003;</span>{f}
+                      </li>
+                    ))}
+                  </ul>
+                  <button onClick={() => { setShowUpgradeModal(false); handleUpgrade(tier.plan); }}
+                    className={`w-full py-2.5 rounded-lg text-sm font-medium transition cursor-pointer ${
+                      tier.pop ? "bg-[var(--accent)] text-black hover:brightness-110" : "bg-[rgba(255,255,255,0.06)] text-[var(--text)] border border-[var(--border-light)] hover:bg-[rgba(255,255,255,0.1)]"
+                    }`}>Choose {tier.name}</button>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[11px] text-[var(--text-dim)] text-center mt-5">Cancel anytime. You&apos;ll be taken to a secure Stripe checkout.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
