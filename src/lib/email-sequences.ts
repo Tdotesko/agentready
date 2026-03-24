@@ -14,15 +14,34 @@ export async function queueEmail(params: {
   );
 }
 
+const DAILY_EMAIL_LIMIT = 90; // Stay under Resend's 100/day free tier
+
+/* ── Check how many emails sent today ── */
+async function getSentToday(): Promise<number> {
+  const [row] = await query<{ count: string }>("SELECT COUNT(*) as count FROM email_log WHERE sent_at > NOW() - INTERVAL '24 hours'");
+  return parseInt(row.count);
+}
+
 /* ── Process pending emails in queue ── */
-export async function processEmailQueue(): Promise<{ sent: number; failed: number }> {
+export async function processEmailQueue(): Promise<{ sent: number; failed: number; skipped: number; dailyUsed: number }> {
+  const sentToday = await getSentToday();
+  const remaining = Math.max(0, DAILY_EMAIL_LIMIT - sentToday);
+
+  if (remaining === 0) {
+    return { sent: 0, failed: 0, skipped: 0, dailyUsed: sentToday };
+  }
+
+  const batchSize = Math.min(remaining, 20);
   const pending = await query<{ id: number; recipient_email: string; subject: string; body_html: string; sequence_id: number | null; step_id: number | null; prospect_id: number | null; lead_id: number | null }>(
-    "SELECT * FROM email_queue WHERE status = 'pending' AND send_after <= NOW() ORDER BY send_after LIMIT 20"
+    `SELECT * FROM email_queue WHERE status = 'pending' AND send_after <= NOW() ORDER BY send_after LIMIT ${batchSize}`
   );
 
   let sent = 0, failed = 0;
 
   for (const email of pending) {
+    // Double check we haven't hit the limit during this batch
+    if (sentToday + sent >= DAILY_EMAIL_LIMIT) break;
+
     try {
       const messageId = await sendEmail(email.recipient_email, email.subject, email.body_html);
 
@@ -44,7 +63,8 @@ export async function processEmailQueue(): Promise<{ sent: number; failed: numbe
     }
   }
 
-  return { sent, failed };
+  const skipped = pending.length - sent - failed;
+  return { sent, failed, skipped, dailyUsed: sentToday + sent };
 }
 
 /* ── Queue cold outreach sequence for a prospect ── */
@@ -116,11 +136,15 @@ export async function getEmailStats() {
   const [openCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM email_log WHERE status = 'opened'");
   const [clickCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM email_log WHERE status = 'clicked'");
   const [bounceCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM email_log WHERE status = 'bounced'");
+  const sentToday = await getSentToday();
 
   const totalSent = parseInt(sentCount.count);
   return {
     queued: parseInt(queueCount.count),
     sent: totalSent,
+    sentToday,
+    dailyLimit: DAILY_EMAIL_LIMIT,
+    dailyRemaining: Math.max(0, DAILY_EMAIL_LIMIT - sentToday),
     opened: parseInt(openCount.count),
     clicked: parseInt(clickCount.count),
     bounced: parseInt(bounceCount.count),

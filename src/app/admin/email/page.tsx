@@ -12,7 +12,7 @@ function Stat({ label, value, sub, color }: { label: string; value: string | num
   );
 }
 
-interface EmailStats { queued: number; sent: number; opened: number; clicked: number; bounced: number; openRate: number; clickRate: number; }
+interface EmailStats { queued: number; sent: number; sentToday: number; dailyLimit: number; dailyRemaining: number; opened: number; clicked: number; bounced: number; openRate: number; clickRate: number; }
 interface QueueItem { id: number; recipient_email: string; subject: string; status: string; send_after: string; }
 interface LogItem { id: number; recipient_email: string; subject: string; status: string; sent_at: string; }
 
@@ -32,12 +32,29 @@ export default function AdminEmailPage() {
       <p className="text-sm text-[var(--text-secondary)] mb-6">Email automation, queue management, and delivery tracking.</p>
 
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <Stat label="Queued" value={stats.queued} color="var(--accent)" />
-          <Stat label="Total Sent" value={stats.sent} />
-          <Stat label="Open Rate" value={`${stats.openRate}%`} color="var(--green)" sub={`${stats.opened} opened`} />
-          <Stat label="Click Rate" value={`${stats.clickRate}%`} color="var(--accent)" sub={`${stats.clicked} clicked, ${stats.bounced} bounced`} />
-        </div>
+        <>
+          {/* Daily limit bar */}
+          <div className="surface rounded-xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[9px] font-semibold text-[var(--text-dim)] uppercase tracking-widest">Daily email usage</p>
+              <p className="text-xs font-mono text-[var(--text-secondary)]">{stats.sentToday} / {stats.dailyLimit}</p>
+            </div>
+            <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all" style={{
+                width: `${Math.min(100, (stats.sentToday / stats.dailyLimit) * 100)}%`,
+                background: stats.sentToday >= stats.dailyLimit * 0.9 ? "var(--red)" : stats.sentToday >= stats.dailyLimit * 0.7 ? "var(--yellow)" : "var(--green)"
+              }} />
+            </div>
+            <p className="text-[10px] text-[var(--text-dim)] mt-1">{stats.dailyRemaining} emails remaining today. Resets every 24 hours.</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <Stat label="Queued" value={stats.queued} color="var(--accent)" />
+            <Stat label="Total Sent" value={stats.sent} />
+            <Stat label="Open Rate" value={`${stats.openRate}%`} color="var(--green)" sub={`${stats.opened} opened`} />
+            <Stat label="Click Rate" value={`${stats.clickRate}%`} color="var(--accent)" sub={`${stats.clicked} clicked, ${stats.bounced} bounced`} />
+          </div>
+        </>
       )}
 
       <div className="grid lg:grid-cols-2 gap-6">
