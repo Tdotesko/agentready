@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "AgentReady | Can AI Agents Buy From Your Store?",
     description:
-      "Scan your e-commerce store and see what AI shopping agents actually see. Free instant analysis.",
+      "Scan your e-commerce store and see what AI shopping agents actually see.",
     type: "website",
   },
 };
@@ -34,7 +34,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-screen flex flex-col font-sans text-[#111]">
+      <body className="min-h-screen flex flex-col font-sans">
         {children}
       </body>
     </html>

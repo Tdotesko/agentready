@@ -3,19 +3,18 @@
 import { useState, useRef, useEffect } from "react";
 import type { ScanCategory, ScanResult } from "@/lib/scanner";
 
-/* ── Score Circle ── */
-function ScoreCircle({ score, grade }: { score: number; grade: string }) {
+/* ─────────── Score Ring ─────────── */
+function ScoreRing({ score, grade }: { score: number; grade: string }) {
   const [val, setVal] = useState(0);
-  const r = 52;
-  const circ = 2 * Math.PI * r;
+  const r = 54, circ = 2 * Math.PI * r;
   const offset = circ - (val / 100) * circ;
-  const color = val >= 75 ? "#16a34a" : val >= 45 ? "#ca8a04" : "#dc2626";
+  const color = val >= 75 ? "var(--green)" : val >= 45 ? "var(--yellow)" : "var(--red)";
 
   useEffect(() => {
     let frame: number;
     const t0 = performance.now();
     const tick = (now: number) => {
-      const p = Math.min((now - t0) / 800, 1);
+      const p = Math.min((now - t0) / 900, 1);
       setVal(Math.round((1 - Math.pow(1 - p, 3)) * score));
       if (p < 1) frame = requestAnimationFrame(tick);
     };
@@ -24,70 +23,69 @@ function ScoreCircle({ score, grade }: { score: number; grade: string }) {
   }, [score]);
 
   return (
-    <div className="relative w-32 h-32 shrink-0">
-      <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-        <circle cx="60" cy="60" r={r} stroke="#e5e5e5" strokeWidth="7" fill="none" />
-        <circle cx="60" cy="60" r={r} stroke={color} strokeWidth="7" fill="none"
+    <div className="relative w-[140px] h-[140px] shrink-0">
+      <svg viewBox="0 0 124 124" className="w-full h-full -rotate-90">
+        <circle cx="62" cy="62" r={r} stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="none" />
+        <circle cx="62" cy="62" r={r} stroke={color} strokeWidth="6" fill="none"
           strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
+          style={{ filter: `drop-shadow(0 0 6px ${color})` }}
           className="transition-[stroke-dashoffset] duration-75" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-mono font-bold tabular-nums" style={{ color }}>{val}</span>
-        <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">{grade}</span>
+        <span className="text-[28px] font-mono font-bold tabular-nums leading-none" style={{ color }}>{val}</span>
+        <span className="text-[10px] font-medium text-[var(--text-dim)] uppercase tracking-[0.15em] mt-1">{grade}</span>
       </div>
     </div>
   );
 }
 
-/* ── Category (teaser vs full) ── */
+/* ─────────── Category Row (teaser) ─────────── */
 function CategoryTeaser({ cat }: { cat: ScanCategory }) {
   const pct = Math.round((cat.score / cat.maxScore) * 100);
-  const dot = pct >= 70 ? "bg-green-500" : pct >= 40 ? "bg-yellow-500" : "bg-red-500";
-  const bar = pct >= 70 ? "bg-green-500" : pct >= 40 ? "bg-yellow-500" : "bg-red-500";
+  const color = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--yellow)" : "var(--red)";
   const label = pct >= 70 ? "Good" : pct >= 40 ? "Needs work" : "Poor";
 
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-neutral-100 last:border-0">
-      <span className={`w-1.5 h-1.5 rounded-full ${dot} shrink-0`} />
-      <span className="flex-1 text-sm">{cat.name}</span>
-      <span className="text-xs text-neutral-400 w-16 text-right">{label}</span>
-      <div className="w-14 h-1 rounded-full bg-neutral-200 overflow-hidden">
-        <div className={`h-full rounded-full ${bar}`} style={{ width: `${pct}%` }} />
+    <div className="flex items-center gap-4 py-3.5 border-b border-[var(--border)] last:border-0">
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+      <span className="flex-1 text-[13px] text-[var(--text)]">{cat.name}</span>
+      <span className="text-[11px] text-[var(--text-dim)] w-20 text-right">{label}</span>
+      <div className="w-16 h-[3px] rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>
   );
 }
 
-function CategoryFull({ cat, defaultOpen }: { cat: ScanCategory; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen ?? false);
+/* ─────────── Category Row (full with expand) ─────────── */
+function CategoryFull({ cat, startOpen }: { cat: ScanCategory; startOpen?: boolean }) {
+  const [open, setOpen] = useState(startOpen ?? false);
   const pct = Math.round((cat.score / cat.maxScore) * 100);
-  const dot = pct >= 70 ? "bg-green-500" : pct >= 40 ? "bg-yellow-500" : "bg-red-500";
-  const bar = pct >= 70 ? "bg-green-500" : pct >= 40 ? "bg-yellow-500" : "bg-red-500";
+  const color = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--yellow)" : "var(--red)";
 
   return (
-    <div className="border-b border-neutral-100 last:border-0">
-      <button onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-4 py-3 cursor-pointer group text-left">
-        <span className={`w-1.5 h-1.5 rounded-full ${dot} shrink-0`} />
-        <span className="flex-1 text-sm group-hover:text-black transition">{cat.name}</span>
-        <span className="text-xs font-mono text-neutral-400 tabular-nums">{cat.score}/{cat.maxScore}</span>
-        <div className="w-14 h-1 rounded-full bg-neutral-200 overflow-hidden">
-          <div className={`h-full rounded-full ${bar}`} style={{ width: `${pct}%` }} />
+    <div className="border-b border-[var(--border)] last:border-0">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-4 py-3.5 cursor-pointer group text-left">
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+        <span className="flex-1 text-[13px] text-[var(--text)] group-hover:text-white transition">{cat.name}</span>
+        <span className="text-[11px] font-mono text-[var(--text-dim)] tabular-nums">{cat.score}/{cat.maxScore}</span>
+        <div className="w-16 h-[3px] rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
         </div>
-        <svg className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${open ? "rotate-180" : ""}`}
-          viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6l4 4 4-4" /></svg>
+        <svg className={`w-3.5 h-3.5 text-[var(--text-dim)] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 6l4 4 4-4" /></svg>
       </button>
       {open && (
         <div className="pb-4 pl-6 space-y-2 fade-up">
           {cat.findings.map((f, i) => (
-            <p key={`f${i}`} className="text-xs text-neutral-500 flex gap-2">
-              <span className="text-green-600 shrink-0">&#10003;</span>{f}
+            <p key={`f${i}`} className="text-xs text-[var(--text-secondary)] flex gap-2 leading-relaxed">
+              <span className="text-[var(--green)] shrink-0">&#10003;</span>{f}
             </p>
           ))}
           {cat.recommendations.map((r, i) => (
-            <p key={`r${i}`} className="text-xs flex gap-2">
-              <span className="text-yellow-600 shrink-0">&#8227;</span>
-              <span className="text-neutral-700">{r}</span>
+            <p key={`r${i}`} className="text-xs flex gap-2 leading-relaxed">
+              <span className="text-[var(--accent)] shrink-0">&#8227;</span>
+              <span className="text-[var(--text)]">{r}</span>
             </p>
           ))}
         </div>
@@ -96,43 +94,61 @@ function CategoryFull({ cat, defaultOpen }: { cat: ScanCategory; defaultOpen?: b
   );
 }
 
-/* ── Scanning ── */
-function Scanning() {
+/* ─────────── Scan Progress ─────────── */
+function ScanProgress() {
   const [i, setI] = useState(0);
-  const msgs = ["Fetching your store", "Reading structured data", "Checking product markup", "Testing agent access", "Calculating score"];
-  useEffect(() => { const id = setInterval(() => setI(s => Math.min(s + 1, msgs.length - 1)), 2000); return () => clearInterval(id); }, [msgs.length]);
+  const steps = ["Connecting to store", "Reading HTML and metadata", "Parsing structured data", "Checking product signals", "Scoring agent readiness"];
+  useEffect(() => { const id = setInterval(() => setI(s => Math.min(s + 1, steps.length - 1)), 2200); return () => clearInterval(id); }, [steps.length]);
 
   return (
-    <div className="py-20 text-center">
-      <div className="inline-block w-5 h-5 border-2 border-neutral-300 border-t-neutral-800 rounded-full spin-slow mb-4" />
-      <p className="text-sm text-neutral-500">{msgs[i]}...</p>
+    <div className="py-20 flex flex-col items-center gap-5">
+      <div className="w-5 h-5 border-2 border-[var(--accent)] border-t-transparent rounded-full loader" />
+      <p className="text-sm text-[var(--text-secondary)]">{steps[i]}...</p>
+      <div className="w-48 h-[2px] bg-[var(--border)] rounded-full overflow-hidden">
+        <div className="h-full bg-[var(--accent)] rounded-full transition-all duration-500" style={{ width: `${((i + 1) / steps.length) * 100}%` }} />
+      </div>
     </div>
   );
 }
 
-/* ── Pricing Card ── */
-function PricingCard({ name, price, period, features, cta, highlighted }: {
-  name: string; price: string; period: string; features: string[]; cta: string; highlighted?: boolean;
+/* ─────────── Pricing ─────────── */
+function Tier({ name, price, desc, features, cta, pop }: {
+  name: string; price: string; desc: string; features: string[]; cta: string; pop?: boolean;
 }) {
   return (
-    <div className={`rounded-lg border p-6 flex flex-col ${highlighted ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"}`}>
-      <p className="text-sm font-medium mb-1">{name}</p>
-      <p className="text-2xl font-bold mb-0.5">{price}<span className="text-sm font-normal text-neutral-400">/{period}</span></p>
-      <ul className="mt-4 mb-6 space-y-2 flex-1">
+    <div className={`rounded-xl p-6 flex flex-col relative ${
+      pop
+        ? "surface ring-1 ring-[var(--accent-border)]"
+        : "surface"
+    }`}>
+      {pop && (
+        <span className="absolute -top-3 left-5 text-[10px] font-semibold uppercase tracking-wider bg-[var(--accent)] text-black px-3 py-0.5 rounded-full">
+          Most popular
+        </span>
+      )}
+      <p className="text-sm font-semibold text-[var(--text)] mb-1">{name}</p>
+      <p className="flex items-baseline gap-1 mb-1">
+        <span className="text-3xl font-bold text-white">{price}</span>
+        <span className="text-sm text-[var(--text-dim)]">/mo</span>
+      </p>
+      <p className="text-xs text-[var(--text-secondary)] mb-5">{desc}</p>
+      <ul className="space-y-2.5 mb-6 flex-1">
         {features.map((f, i) => (
-          <li key={i} className="text-sm text-neutral-600 flex gap-2">
-            <span className="text-neutral-400 shrink-0">+</span>{f}
+          <li key={i} className="text-[13px] text-[var(--text-secondary)] flex gap-2.5">
+            <span className="text-[var(--accent)] shrink-0 text-xs mt-0.5">&#10003;</span>{f}
           </li>
         ))}
       </ul>
       <button className={`w-full py-2.5 rounded-lg text-sm font-medium transition cursor-pointer ${
-        highlighted ? "bg-neutral-900 text-white hover:bg-neutral-800" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+        pop
+          ? "bg-[var(--accent)] text-black hover:brightness-110"
+          : "bg-[var(--bg-elevated)] text-[var(--text)] border border-[var(--border-light)] hover:bg-[rgba(255,255,255,0.06)]"
       }`}>{cta}</button>
     </div>
   );
 }
 
-/* ── Page ── */
+/* ─────────── Page ─────────── */
 export default function Home() {
   const [url, setUrl] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -141,6 +157,7 @@ export default function Home() {
   const [unlocked, setUnlocked] = useState(false);
   const [email, setEmail] = useState("");
   const [unlockState, setUnlockState] = useState<"idle" | "sending" | "done" | "error">("idle");
+  const [copied, setCopied] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   async function handleScan(e: React.FormEvent) {
@@ -150,9 +167,9 @@ export default function Home() {
     try {
       const res = await fetch("/api/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: url.trim() }) });
       const data = await res.json();
-      if (!res.ok) setError(data.error || "Scan failed");
-      else { setResult(data); setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100); }
-    } catch { setError("Connection failed. Check the URL and try again."); }
+      if (!res.ok) setError(data.error || "Scan failed.");
+      else { setResult(data); setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120); }
+    } catch { setError("Connection failed. Double check the URL and try again."); }
     finally { setScanning(false); }
   }
 
@@ -163,238 +180,254 @@ export default function Home() {
     try {
       const res = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), scannedUrl: result?.url, score: result?.overallScore }) });
-      if (res.ok) { setUnlockState("done"); setUnlocked(true); }
-      else setUnlockState("error");
+      if (res.ok) { setUnlockState("done"); setUnlocked(true); } else setUnlockState("error");
     } catch { setUnlockState("error"); }
+  }
+
+  function share() {
+    const text = `Just scored ${result?.overallScore}/100 on AI agent readiness for my store. See how yours does:`;
+    if (navigator.share) navigator.share({ text, url: "https://agentready.dev" });
+    else { navigator.clipboard.writeText(`${text} https://agentready.dev`); setCopied(true); setTimeout(() => setCopied(false), 2000); }
   }
 
   const issues = result ? result.categories.reduce((n, c) => n + c.recommendations.length, 0) : 0;
 
   return (
     <>
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 bg-[#fafafa]/80 backdrop-blur-lg border-b border-neutral-200">
-        <div className="max-w-2xl mx-auto px-6 h-12 flex items-center justify-between">
-          <a href="/" className="text-sm font-semibold tracking-tight">AgentReady</a>
-          <a href="#pricing" className="text-xs text-neutral-500 hover:text-neutral-900 transition">Pricing</a>
+      {/* ── Nav ── */}
+      <nav className="fixed top-0 inset-x-0 z-50 glass">
+        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
+          <a href="/" className="flex items-center gap-2.5">
+            <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black">A</span>
+            <span className="text-sm font-semibold tracking-tight text-white">AgentReady</span>
+          </a>
+          <div className="flex items-center gap-5">
+            <a href="#pricing" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition">Pricing</a>
+            {result && (
+              <button onClick={share} className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition cursor-pointer">
+                {copied ? "Copied!" : "Share"}
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="max-w-2xl mx-auto px-6 pt-20 pb-16">
-          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight leading-snug mb-4">
-            Can AI shopping agents<br />find and buy your products?
-          </h1>
-          <p className="text-neutral-500 text-base leading-relaxed max-w-lg mb-8">
-            AI agents from Google, OpenAI, and Visa are starting to shop on behalf of real customers.
-            We scan your store and tell you exactly what they see, what they miss, and how to fix it.
-          </p>
+      <main className="flex-1 pt-14">
+        {/* ── Hero ── */}
+        <section className="hero-ambient">
+          <div className="max-w-3xl mx-auto px-6 pt-24 sm:pt-32 pb-20">
+            <div className="inline-flex items-center gap-2 text-[11px] text-[var(--accent)] font-medium tracking-wider uppercase mb-6 bg-[var(--accent-soft)] border border-[var(--accent-border)] rounded-full px-3.5 py-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+              Now live
+            </div>
 
-          <form onSubmit={handleScan}
-            className="flex items-center border border-neutral-300 rounded-lg bg-white focus-within:border-neutral-400 focus-within:shadow-sm transition-all">
-            <label htmlFor="url" className="sr-only">Store URL</label>
-            <input id="url" type="text" value={url} onChange={(e) => setUrl(e.target.value)}
-              placeholder="yourstore.com" disabled={scanning} autoComplete="url" spellCheck={false}
-              className="flex-1 bg-transparent px-4 py-3 text-sm placeholder:text-neutral-400 focus:outline-none" />
-            <button type="submit" disabled={scanning || !url.trim()}
-              className="m-1 px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-25 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
-              {scanning ? "Scanning" : "Scan"}
-            </button>
-          </form>
-          <p className="text-[11px] text-neutral-400 mt-2">Free. No account needed for your first scan.</p>
+            <h1 className="text-[2rem] sm:text-[2.75rem] lg:text-[3.25rem] font-bold leading-[1.1] tracking-tight text-white mb-5">
+              Find out if AI agents<br />can buy from your store
+            </h1>
 
-          {error && (
-            <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3" role="alert">{error}</p>
-          )}
+            <p className="text-[var(--text-secondary)] text-base sm:text-lg leading-relaxed max-w-lg mb-10">
+              Google, OpenAI, and Visa are rolling out AI shopping agents that browse and buy on behalf of customers.
+              We&apos;ll tell you exactly what those agents see when they visit your store.
+            </p>
+
+            {/* Input */}
+            <div className="max-w-lg">
+              <form onSubmit={handleScan}
+                className="flex items-center rounded-xl bg-[var(--bg-raised)] border border-[var(--border-light)] input-ring transition-all">
+                <label htmlFor="url" className="sr-only">Store URL</label>
+                <input id="url" type="text" value={url} onChange={(e) => setUrl(e.target.value)}
+                  placeholder="yourstore.com" disabled={scanning} autoComplete="url" spellCheck={false}
+                  className="flex-1 bg-transparent px-5 py-4 text-[15px] text-white placeholder:text-[var(--text-dim)] focus:outline-none" />
+                <button type="submit" disabled={scanning || !url.trim()}
+                  className="m-1.5 px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
+                  {scanning ? "Scanning" : "Run scan"}
+                </button>
+              </form>
+              <p className="text-[11px] text-[var(--text-dim)] mt-3">Free to try. No account needed for your first scan.</p>
+            </div>
+
+            {error && (
+              <div className="mt-5 max-w-lg text-sm text-[var(--red)] bg-[var(--red-soft)] border border-[rgba(248,113,113,0.15)] rounded-lg px-4 py-3" role="alert">{error}</div>
+            )}
+          </div>
         </section>
 
-        {scanning && <Scanning />}
+        {/* ── Scanning ── */}
+        {scanning && <ScanProgress />}
 
-        {/* Results */}
+        {/* ── Results ── */}
         {result && (
-          <section ref={resultRef} className="max-w-2xl mx-auto px-6 pb-20 fade-up">
-            <div className="border border-neutral-200 rounded-lg bg-white p-6 sm:p-8 shadow-sm">
-              {/* Header */}
-              <div className="flex items-start gap-6 mb-6">
-                <ScoreCircle score={result.overallScore} grade={result.grade} />
-                <div className="pt-1 min-w-0">
-                  <p className="text-xs text-neutral-400 uppercase tracking-wider font-medium mb-1">Readiness Score</p>
-                  <p className="text-sm font-mono text-neutral-500 truncate mb-2">{result.url}</p>
-                  {result.overallScore < 50 && <p className="text-sm text-red-600">AI agents can barely see your store. You need to fix this.</p>}
-                  {result.overallScore >= 50 && result.overallScore < 75 && <p className="text-sm text-yellow-700">Agents see some of your data but miss important details.</p>}
-                  {result.overallScore >= 75 && <p className="text-sm text-green-700">Your store is in good shape for AI-powered shopping.</p>}
-                  <p className="text-xs text-neutral-400 mt-2">{issues} issue{issues !== 1 && "s"} found &middot; {result.scanDurationMs}ms</p>
+          <section ref={resultRef} className="max-w-3xl mx-auto px-6 pb-24 fade-up">
+            <div className="surface rounded-xl p-6 sm:p-8">
+              {/* Score header */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8">
+                <ScoreRing score={result.overallScore} grade={result.grade} />
+                <div className="text-center sm:text-left">
+                  <p className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-medium mb-2">Agent Readiness Report</p>
+                  <p className="text-sm font-mono text-[var(--text-secondary)] break-all mb-3">{result.url}</p>
+                  {result.overallScore < 50 && <p className="text-sm text-[var(--red)]">AI agents can barely see your store. You&apos;re losing potential sales.</p>}
+                  {result.overallScore >= 50 && result.overallScore < 75 && <p className="text-sm text-[var(--yellow)]">Agents see some of your data but miss important product details.</p>}
+                  {result.overallScore >= 75 && <p className="text-sm text-[var(--green)]">Your store is well set up for AI-powered shopping.</p>}
+                  <div className="flex flex-wrap items-center gap-3 mt-3 text-[11px] text-[var(--text-dim)]">
+                    <span>{issues} issue{issues !== 1 && "s"}</span>
+                    <span className="w-px h-3 bg-[var(--border)]" />
+                    <span>{result.scanDurationMs}ms</span>
+                    <span className="w-px h-3 bg-[var(--border)]" />
+                    <span>{new Date(result.scannedAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Categories - teaser or full */}
+              {/* Categories */}
               {!unlocked ? (
                 <>
                   <div className="mb-6">
                     {result.categories.map((cat, i) => <CategoryTeaser key={i} cat={cat} />)}
                   </div>
 
-                  {/* Gate */}
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white z-10 pointer-events-none rounded-lg" />
-                    <div className="blur-[3px] opacity-40 pointer-events-none select-none py-4">
-                      <p className="text-xs text-neutral-600 mb-2">&#10003; Found 3 JSON-LD blocks with Product schema</p>
-                      <p className="text-xs text-neutral-600 mb-2">&#8227; Add og:price:amount meta tags for machine-readable pricing</p>
-                      <p className="text-xs text-neutral-600 mb-2">&#10003; sitemap.xml is accessible</p>
-                      <p className="text-xs text-neutral-600">&#8227; Add structured review data for social proof signals</p>
+                  {/* Blurred gate */}
+                  <div className="relative mb-2">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--bg-raised)]/60 to-[var(--bg-raised)] z-10 pointer-events-none rounded-lg" />
+                    <div className="blur-[3px] opacity-30 pointer-events-none select-none py-4 px-2">
+                      <p className="text-xs text-[var(--text)] mb-2">&#10003; Found 3 JSON-LD blocks with Product schema</p>
+                      <p className="text-xs text-[var(--text)] mb-2">&#8227; Add og:price:amount meta tags for machine-readable pricing</p>
+                      <p className="text-xs text-[var(--text)] mb-2">&#10003; sitemap.xml is accessible and well-formed</p>
+                      <p className="text-xs text-[var(--text)]">&#8227; Add structured review data for social proof signals</p>
                     </div>
                   </div>
 
-                  <div className="border border-neutral-200 rounded-lg p-5 mt-2 bg-neutral-50">
-                    <p className="text-sm font-medium mb-1">See what&apos;s actually broken</p>
-                    <p className="text-xs text-neutral-500 mb-4">
-                      Enter your email to unlock the full report with every finding and fix, prioritized by impact.
-                      Your first report is free.
+                  {/* Unlock */}
+                  <div className="rounded-xl p-5 bg-[var(--bg-elevated)] border border-[var(--border-light)]">
+                    <p className="text-sm font-semibold text-white mb-1">Unlock your full report</p>
+                    <p className="text-xs text-[var(--text-secondary)] mb-4">
+                      See every finding and exactly how to fix it, ordered by impact. Your first report is on us.
                     </p>
                     <form onSubmit={handleUnlock} className="flex gap-2">
                       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
                         placeholder="you@company.com" disabled={unlockState === "sending"}
-                        className="flex-1 border border-neutral-300 rounded-md px-3 py-2 text-sm placeholder:text-neutral-400 focus:outline-none focus:border-neutral-400 bg-white" />
+                        className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" />
                       <button type="submit" disabled={unlockState === "sending"}
-                        className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-40 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
-                        {unlockState === "sending" ? "..." : "Unlock report"}
+                        className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
+                        {unlockState === "sending" ? "..." : "Unlock"}
                       </button>
                     </form>
-                    {unlockState === "error" && <p className="text-xs text-red-600 mt-2">Something went wrong. Try again.</p>}
+                    {unlockState === "error" && <p className="text-xs text-[var(--red)] mt-2">Something went wrong. Try again.</p>}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="mb-4">
-                    {result.categories.map((cat, i) => <CategoryFull key={i} cat={cat} defaultOpen={cat.status === "fail"} />)}
+                  <div className="mb-6">
+                    {result.categories.map((cat, i) => <CategoryFull key={i} cat={cat} startOpen={cat.status === "fail"} />)}
                   </div>
-                  <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-4 py-2.5">
-                    Full report unlocked. Set up monitoring to get alerted when your score changes.
-                  </p>
+                  <div className="rounded-lg px-4 py-3 bg-[var(--green-soft)] border border-[rgba(52,211,153,0.15)]">
+                    <p className="text-xs text-[var(--green)] font-medium">Full report unlocked. Want weekly monitoring? Check out our paid plans below.</p>
+                  </div>
                 </>
               )}
             </div>
 
-            {/* Upsell after results */}
+            {/* Post-unlock upsell */}
             {unlocked && (
-              <div className="mt-8 border border-neutral-200 rounded-lg bg-white p-6 shadow-sm">
-                <p className="text-sm font-medium mb-1">Want to stay ahead?</p>
-                <p className="text-xs text-neutral-500 mb-4">
-                  Your competitors are optimizing for AI agents right now.
-                  Get weekly monitoring, automated alerts, and detailed fix guides.
+              <div className="mt-6 surface rounded-xl p-6">
+                <p className="text-sm font-semibold text-white mb-1">Your competitors are already optimizing for this</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-4">
+                  Get weekly automated scans, alerts when your score drops, and step-by-step fix guides with code you can copy and paste.
                 </p>
-                <a href="#pricing"
-                  className="inline-block px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition">
+                <a href="#pricing" className="inline-block px-4 py-2 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition">
                   See plans
                 </a>
               </div>
             )}
 
-            <div className="mt-6 text-center">
+            <div className="mt-8 text-center">
               <button onClick={() => { setResult(null); setUrl(""); setError(""); setUnlocked(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                className="text-xs text-neutral-400 hover:text-neutral-600 transition cursor-pointer">
-                Scan another store
+                className="text-xs text-[var(--text-dim)] hover:text-[var(--text-secondary)] transition cursor-pointer">
+                Scan another store &rarr;
               </button>
             </div>
           </section>
         )}
 
-        {/* Below fold */}
+        {/* ── Below fold ── */}
         {!result && !scanning && (
           <>
-            {/* What we scan */}
-            <section className="max-w-2xl mx-auto px-6 pb-16">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-4">What we check</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-4">
+            {/* What we check */}
+            <section className="max-w-3xl mx-auto px-6 pb-20">
+              <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-5">What we analyze</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-[var(--border)] rounded-xl overflow-hidden">
                 {[
-                  "JSON-LD and Schema.org markup",
-                  "Product prices in meta tags",
-                  "Image alt text quality",
-                  "Sitemap and robots.txt",
-                  "Availability indicators",
-                  "Shipping and return policies",
-                  "Add-to-cart DOM signals",
-                  "Review and rating data",
-                  "Page weight and JS footprint",
-                ].map((item) => (
-                  <p key={item} className="text-sm text-neutral-600">{item}</p>
+                  { title: "Structured Data", items: ["JSON-LD and Schema.org", "Open Graph meta tags", "Microdata markup"] },
+                  { title: "Product Signals", items: ["Machine-readable prices", "Availability status", "Image alt text quality"] },
+                  { title: "Store Infrastructure", items: ["Sitemap and robots.txt", "Semantic HTML structure", "Page weight and JS load"] },
+                ].map((col) => (
+                  <div key={col.title} className="bg-[var(--bg-raised)] p-5">
+                    <p className="text-xs font-semibold text-[var(--accent)] mb-3">{col.title}</p>
+                    <ul className="space-y-2">
+                      {col.items.map((item) => (
+                        <li key={item} className="text-[13px] text-[var(--text-secondary)]">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Social proof numbers */}
+            <section className="max-w-3xl mx-auto px-6 pb-20">
+              <div className="flex flex-wrap gap-12 sm:gap-20">
+                {[
+                  { num: "$1T+", label: "SaaS value shifted in the Feb 2026 selloff" },
+                  { num: "41.5%", label: "of YC W26 batch building agent infra" },
+                  { num: "5 sec", label: "Average scan time" },
+                ].map((s) => (
+                  <div key={s.label}>
+                    <p className="text-2xl font-bold text-white">{s.num}</p>
+                    <p className="text-xs text-[var(--text-dim)] mt-1 max-w-[180px]">{s.label}</p>
+                  </div>
                 ))}
               </div>
             </section>
 
             {/* Why now */}
-            <section className="max-w-2xl mx-auto px-6 pb-16">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-4">Why this matters now</p>
-              <div className="space-y-4 text-sm text-neutral-600 leading-relaxed max-w-lg">
+            <section className="max-w-3xl mx-auto px-6 pb-20">
+              <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-5">The context</p>
+              <div className="max-w-lg space-y-4 text-[15px] text-[var(--text-secondary)] leading-relaxed">
                 <p>
                   Visa expects millions of people to use AI agents to buy things by the end of 2026.
                   Google already launched the Universal Commerce Protocol with Shopify, Etsy, Target, and Walmart built in.
                 </p>
                 <p>
-                  Over 40% of the latest Y Combinator batch is building infrastructure for AI agents.
-                  The stores that aren&apos;t set up for this will lose sales to the ones that are. It&apos;s that simple.
+                  Stores that aren&apos;t set up for machine readability will get skipped.
+                  The ones that are will capture a wave of traffic that doesn&apos;t even open a browser.
                 </p>
               </div>
             </section>
 
             {/* Pricing */}
-            <section id="pricing" className="max-w-2xl mx-auto px-6 pb-24">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-6">Pricing</p>
+            <section id="pricing" className="max-w-3xl mx-auto px-6 pb-28">
+              <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-6">Pricing</p>
               <div className="grid sm:grid-cols-3 gap-4">
-                <PricingCard
-                  name="Starter"
-                  price="$29"
-                  period="mo"
-                  features={[
-                    "Full scan reports",
-                    "Up to 3 stores",
-                    "Rescan anytime",
-                    "Fix priority ranking",
-                    "Code snippets for each fix",
-                  ]}
-                  cta="Get started"
-                />
-                <PricingCard
-                  name="Pro"
-                  price="$99"
-                  period="mo"
-                  highlighted
-                  features={[
-                    "Everything in Starter",
-                    "Unlimited stores",
-                    "Weekly automated scans",
-                    "Email alerts on score changes",
-                    "Competitor benchmarking",
-                  ]}
-                  cta="Start free trial"
-                />
-                <PricingCard
-                  name="Agency"
-                  price="$249"
-                  period="mo"
-                  features={[
-                    "Everything in Pro",
-                    "White-label PDF reports",
-                    "Bulk scanning API",
-                    "Client dashboard",
-                    "Priority support",
-                  ]}
-                  cta="Contact us"
-                />
+                <Tier name="Starter" price="$29" desc="For store owners getting started"
+                  features={["Full scan reports", "Up to 3 stores", "Rescan anytime", "Fix priority ranking", "Code snippets for each fix"]}
+                  cta="Get started" />
+                <Tier name="Pro" price="$99" desc="For serious sellers and teams" pop
+                  features={["Everything in Starter", "Unlimited stores", "Weekly automated scans", "Score change alerts", "Competitor benchmarking"]}
+                  cta="Start free trial" />
+                <Tier name="Agency" price="$249" desc="For agencies managing clients"
+                  features={["Everything in Pro", "White-label PDF reports", "Bulk scanning API", "Client dashboard", "Priority support"]}
+                  cta="Talk to us" />
               </div>
             </section>
           </>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-neutral-200 px-6 py-5">
-        <div className="max-w-2xl mx-auto flex items-center justify-between text-xs text-neutral-400">
+      <footer className="border-t border-[var(--border)] px-6 py-5">
+        <div className="max-w-3xl mx-auto flex items-center justify-between text-[11px] text-[var(--text-dim)]">
           <span>AgentReady</span>
-          <div className="flex gap-4">
-            <a href="#pricing" className="hover:text-neutral-600 transition">Pricing</a>
-            <a href="/api/health" className="hover:text-neutral-600 transition">Status</a>
+          <div className="flex gap-5">
+            <a href="#pricing" className="hover:text-[var(--text-secondary)] transition">Pricing</a>
+            <a href="/api/health" className="hover:text-[var(--text-secondary)] transition">Status</a>
           </div>
         </div>
       </footer>
