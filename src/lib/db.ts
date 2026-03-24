@@ -80,5 +80,72 @@ export async function initDb() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
     EXCEPTION WHEN duplicate_column THEN NULL;
     END $$;
+
+    -- Lead generation tables
+    CREATE TABLE IF NOT EXISTS prospects (
+      id SERIAL PRIMARY KEY,
+      url TEXT NOT NULL UNIQUE,
+      email TEXT,
+      store_name TEXT,
+      platform TEXT,
+      score INTEGER,
+      grade TEXT,
+      status TEXT DEFAULT 'new',
+      source TEXT,
+      notes TEXT,
+      last_contacted_at TIMESTAMPTZ,
+      next_followup_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS email_sequences (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      trigger_type TEXT NOT NULL,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS email_steps (
+      id SERIAL PRIMARY KEY,
+      sequence_id INTEGER REFERENCES email_sequences(id) ON DELETE CASCADE,
+      step_order INTEGER NOT NULL,
+      delay_hours INTEGER NOT NULL,
+      subject TEXT NOT NULL,
+      body_html TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS email_log (
+      id SERIAL PRIMARY KEY,
+      recipient_email TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      sequence_id INTEGER REFERENCES email_sequences(id),
+      step_id INTEGER REFERENCES email_steps(id),
+      prospect_id INTEGER REFERENCES prospects(id),
+      lead_id INTEGER,
+      status TEXT DEFAULT 'sent',
+      sendgrid_message_id TEXT,
+      sent_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS email_queue (
+      id SERIAL PRIMARY KEY,
+      recipient_email TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      body_html TEXT NOT NULL,
+      sequence_id INTEGER,
+      step_id INTEGER,
+      prospect_id INTEGER,
+      lead_id INTEGER,
+      send_after TIMESTAMPTZ NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_prospects_status ON prospects(status);
+    CREATE INDEX IF NOT EXISTS idx_prospects_url ON prospects(url);
+    CREATE INDEX IF NOT EXISTS idx_email_queue_pending ON email_queue(status, send_after);
+    CREATE INDEX IF NOT EXISTS idx_email_log_recipient ON email_log(recipient_email);
   `);
 }
