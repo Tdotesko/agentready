@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         competitor: theirPct,
         gap: theirPct - myPct,
         theyHave: theirCat.findings.filter((f) => !myCat.findings.includes(f)),
-        youNeed: myCat.recommendations.filter((r) => !theirCat.recommendations.includes(r) || true),
+        youNeed: myCat.recommendations,
       };
     }).filter(Boolean);
 
