@@ -286,6 +286,18 @@ function DashboardInner() {
     finally { setFreeScanning(false); }
   }
 
+  async function handleUpgrade(plan: string) {
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {}
+  }
+
   async function handleCompare(e: React.FormEvent) {
     e.preventDefault();
     if (!compMyUrl.trim() || !compTheirUrl.trim() || comparing) return;
@@ -361,11 +373,11 @@ function DashboardInner() {
               {portalLoading ? "Loading..." : "Billing"}
             </button>
           ) : (
-            <a href="/#pricing"
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--accent)] hover:bg-[var(--accent-soft)] transition">
+            <button onClick={() => handleUpgrade("business")}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--accent)] hover:bg-[var(--accent-soft)] transition cursor-pointer">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
               Upgrade
-            </a>
+            </button>
           )}
           <button onClick={logout}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[rgba(255,255,255,0.03)] transition cursor-pointer">
@@ -557,7 +569,7 @@ function DashboardInner() {
 
                   <div className="text-center">
                     <p className="text-xs text-[var(--text-secondary)] mb-3">Upgrade to see every finding, get fix code, and track your score over time.</p>
-                    <a href="/signup?plan=growth" className="inline-block px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition">Unlock full report</a>
+                    <button onClick={() => handleUpgrade("growth")} className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition cursor-pointer">Unlock full report</button>
                   </div>
                 </div>
               )}
@@ -605,10 +617,10 @@ function DashboardInner() {
                         </li>
                       ))}
                     </ul>
-                    <a href={`/signup?plan=${tier.plan}`}
-                      className={`w-full py-2.5 rounded-lg text-sm font-medium text-center block transition ${
+                    <button onClick={() => handleUpgrade(tier.plan)}
+                      className={`w-full py-2.5 rounded-lg text-sm font-medium text-center block transition cursor-pointer ${
                         tier.pop ? "bg-[var(--accent)] text-black hover:brightness-110" : "bg-[var(--bg-elevated)] text-[var(--text)] border border-[var(--border-light)] hover:bg-[rgba(255,255,255,0.06)]"
-                      }`}>Get started</a>
+                      }`}>Get started</button>
                   </div>
                 ))}
               </div>
