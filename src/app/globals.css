@@ -132,6 +132,33 @@ body::before {
 }
 .loader { animation: count-spin 0.7s linear infinite; }
 
+/* Skeleton loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-raised) 25%, var(--bg-elevated) 50%, var(--bg-raised) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* Tooltip */
+.tooltip-container { position: relative; }
+.tooltip-container .tooltip-text {
+  visibility: hidden; opacity: 0;
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: var(--bg-elevated); border: 1px solid var(--border-light); color: var(--text-secondary);
+  padding: 6px 10px; border-radius: 6px; font-size: 11px; white-space: nowrap; z-index: 50;
+  transition: opacity 0.15s, visibility 0.15s;
+  pointer-events: none;
+}
+.tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+/* Tab transitions */
+.tab-content { animation: fade-in 0.2s ease-out; }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -12,9 +12,10 @@ const PLATFORM_LABELS: Record<string, string> = { shopify: "Shopify", woocommerc
 const PLAN_NAMES: Record<string, string> = { growth: "Growth", business: "Business", enterprise: "Enterprise", starter: "Starter", pro: "Pro", agency: "Agency" };
 
 /* ─────── Stat Card ─────── */
-function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+function StatCard({ label, value, sub, color, tip }: { label: string; value: string; sub?: string; color?: string; tip?: string }) {
   return (
-    <div className="surface rounded-xl p-5">
+    <div className="surface rounded-xl p-5 tooltip-container">
+      {tip && <span className="tooltip-text">{tip}</span>}
       <p className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-2">{label}</p>
       <p className="text-2xl font-bold font-mono tabular-nums" style={{ color: color || "white" }}>{value}</p>
       {sub && <p className="text-[11px] text-[var(--text-dim)] mt-1">{sub}</p>}
@@ -329,8 +330,17 @@ function DashboardInner() {
   async function logout() { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/"; }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen flex">
+      <aside className="w-56 shrink-0 border-r border-[var(--border)] bg-[var(--bg-raised)] hidden lg:flex flex-col">
+        <div className="p-5 border-b border-[var(--border)]"><div className="skeleton h-7 w-32" /></div>
+        <div className="p-3 space-y-2">{[1,2,3].map(i => <div key={i} className="skeleton h-8 w-full" />)}</div>
+      </aside>
+      <div className="flex-1 p-8">
+        <div className="skeleton h-8 w-48 mb-6" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">{[1,2,3,4].map(i => <div key={i} className="skeleton h-24 rounded-xl" />)}</div>
+        <div className="skeleton h-48 rounded-xl mb-6" />
+        <div className="grid sm:grid-cols-2 gap-4">{[1,2].map(i => <div key={i} className="skeleton h-40 rounded-xl" />)}</div>
+      </div>
     </div>
   );
 
@@ -436,8 +446,37 @@ function DashboardInner() {
             </div>
           )}
 
-          {/* ═══ SCAN SECTION ═══ */}
-          {navSection === "scan" && !viewResult && isActive && (
+          {/* ═══ ONBOARDING (new paid user, 0 scans) ═══ */}
+          {navSection === "scan" && !viewResult && isActive && scans.length === 0 && !scanning && (
+            <div className="max-w-lg mx-auto py-8 fade-up">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent-border)] flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-[var(--accent)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                </div>
+                <h1 className="text-xl font-bold text-white mb-2">Let&apos;s scan your store</h1>
+                <p className="text-sm text-[var(--text-secondary)]">Enter your store URL below and we&apos;ll run a deep scan across up to 12 pages, detect your platform, and generate fix code.</p>
+              </div>
+
+              <form onSubmit={handleScan} className="surface rounded-xl p-6">
+                <label className="text-xs font-medium text-[var(--text-secondary)] block mb-2">Your store URL</label>
+                <div className="flex gap-2">
+                  <input type="text" value={scanUrl} onChange={(e) => setScanUrl(e.target.value)} placeholder="yourstore.com"
+                    className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-3 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" autoFocus />
+                  <button type="submit" disabled={!scanUrl.trim()}
+                    className="px-6 py-3 rounded-lg btn-primary text-sm cursor-pointer disabled:cursor-not-allowed shrink-0">Scan</button>
+                </div>
+                {scanError && <p className="text-xs text-[var(--red)] mt-2">{scanError}</p>}
+                <div className="mt-4 flex items-center gap-4 text-[10px] text-[var(--text-dim)]">
+                  <span>Up to 12 pages</span>
+                  <span>Platform detection</span>
+                  <span>Fix code included</span>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ═══ SCAN SECTION (has existing scans) ═══ */}
+          {navSection === "scan" && !viewResult && isActive && (scans.length > 0 || scanning) && (
             <>
               {/* Welcome + Stats */}
               <div className="mb-8">
@@ -450,10 +489,10 @@ function DashboardInner() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                   <StatCard label="Latest Score" value={String(latestScan?.score || 0)}
                     color={latestScan?.score >= 75 ? "var(--green)" : latestScan?.score >= 45 ? "var(--yellow)" : "var(--red)"}
-                    sub={latestScan?.grade} />
-                  <StatCard label="Average" value={String(avgScore)} sub={`across ${scans.length} scans`} />
-                  <StatCard label="Best Score" value={String(bestScore)} color="var(--green)" />
-                  <StatCard label="Stores" value={String(uniqueStores)} sub="unique domains" />
+                    sub={latestScan?.grade} tip="Your most recent scan score out of 100" />
+                  <StatCard label="Average" value={String(avgScore)} sub={`across ${scans.length} scans`} tip="Average score across all your scans" />
+                  <StatCard label="Best Score" value={String(bestScore)} color="var(--green)" tip="Your highest score achieved" />
+                  <StatCard label="Stores" value={String(uniqueStores)} sub="unique domains" tip="Number of different stores you've scanned" />
                 </div>
               )}
 
@@ -795,7 +834,12 @@ function DashboardInner() {
               <div className="surface rounded-xl overflow-hidden">
                 {scans.length === 0 ? (
                   <div className="px-6 py-16 text-center">
-                    <p className="text-sm text-[var(--text-dim)]">No scans yet. Run your first scan to see results here.</p>
+                    <div className="w-12 h-12 rounded-2xl bg-[rgba(255,255,255,0.04)] flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-6 h-6 text-[var(--text-dim)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <p className="text-sm text-[var(--text)] font-medium mb-1">No scan history yet</p>
+                    <p className="text-xs text-[var(--text-dim)] mb-4">Your scan results will appear here after you run your first scan.</p>
+                    <button onClick={() => setNavSection("scan")} className="text-xs text-[var(--accent)] hover:underline cursor-pointer">Run a scan now</button>
                   </div>
                 ) : (
                   <div className="divide-y divide-[var(--border)]">
