@@ -221,7 +221,8 @@ function DashboardInner() {
   const [compError, setCompError] = useState("");
 
   const isActive = user?.subscriptionStatus === "active" || user?.subscriptionStatus === "trialing";
-  const canCompare = ["pro", "agency", "business", "enterprise"].includes(user?.plan || "");
+  const canCompare = isActive && ["pro", "agency", "business", "enterprise"].includes(user?.plan || "");
+  const isFree = !isActive && !justUpgraded;
 
   const loadData = useCallback(async () => {
     try {
@@ -321,8 +322,8 @@ function DashboardInner() {
         </div>
         <nav className="flex-1 p-3 space-y-0.5">
           {[
-            { id: "scan" as const, label: "New Scan", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
-            { id: "history" as const, label: "Scan History", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
+            { id: "scan" as const, label: isFree ? "Overview" : "New Scan", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
+            ...(isActive ? [{ id: "history" as const, label: "Scan History", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" }] : []),
             ...(canCompare ? [{ id: "compare" as const, label: "Compare", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" }] : []),
           ].map((item) => (
             <button key={item.id} onClick={() => { setNavSection(item.id); setViewResult(null); }}
@@ -335,11 +336,19 @@ function DashboardInner() {
           ))}
         </nav>
         <div className="p-3 border-t border-[var(--border)] space-y-1">
-          <button onClick={openPortal} disabled={portalLoading}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[rgba(255,255,255,0.03)] transition cursor-pointer">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
-            {portalLoading ? "Loading..." : "Billing"}
-          </button>
+          {isActive ? (
+            <button onClick={openPortal} disabled={portalLoading}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[rgba(255,255,255,0.03)] transition cursor-pointer">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
+              {portalLoading ? "Loading..." : "Billing"}
+            </button>
+          ) : (
+            <a href="/#pricing"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--accent)] hover:bg-[var(--accent-soft)] transition">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+              Upgrade
+            </a>
+          )}
           <button onClick={logout}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[rgba(255,255,255,0.03)] transition cursor-pointer">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>
@@ -348,7 +357,7 @@ function DashboardInner() {
         </div>
         <div className="px-5 py-3 border-t border-[var(--border)]">
           <p className="text-[10px] text-[var(--text-dim)] truncate">{user?.email}</p>
-          <p className="text-[10px] text-[var(--accent)]">{PLAN_NAMES[user?.plan || ""] || "Free"}</p>
+          <p className={`text-[10px] ${isActive ? "text-[var(--accent)]" : "text-[var(--text-dim)]"}`}>{isActive ? PLAN_NAMES[user?.plan || ""] || "Active" : "Free account"}</p>
         </div>
       </aside>
 
@@ -369,8 +378,8 @@ function DashboardInner() {
         {/* Mobile nav tabs */}
         <div className="lg:hidden flex border-b border-[var(--border)] bg-[var(--bg-raised)] px-4 overflow-x-auto">
           {[
-            { id: "scan" as const, label: "Scan" },
-            { id: "history" as const, label: "History" },
+            { id: "scan" as const, label: isFree ? "Overview" : "Scan" },
+            ...(isActive ? [{ id: "history" as const, label: "History" }] : []),
             ...(canCompare ? [{ id: "compare" as const, label: "Compare" }] : []),
           ].map((t) => (
             <button key={t.id} onClick={() => { setNavSection(t.id); setViewResult(null); }}
@@ -455,12 +464,66 @@ function DashboardInner() {
             </>
           )}
 
-          {/* No subscription */}
-          {navSection === "scan" && !isActive && !justUpgraded && (
-            <div className="text-center py-20">
-              <h2 className="text-lg font-bold text-white mb-2">Activate your account</h2>
-              <p className="text-sm text-[var(--text-secondary)] mb-6">Pick a plan to start scanning your stores.</p>
-              <a href="/#pricing" className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition inline-block">View plans</a>
+          {/* Free user upgrade experience */}
+          {navSection === "scan" && isFree && (
+            <div>
+              <div className="mb-8">
+                <h1 className="text-lg font-bold text-white mb-1">Welcome to AgentReady</h1>
+                <p className="text-sm text-[var(--text-secondary)]">Choose a plan to unlock all features and start optimizing your store.</p>
+              </div>
+
+              {/* What you get */}
+              <div className="surface rounded-xl p-6 mb-6">
+                <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-5">What you get with a paid plan</p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {[
+                    { title: "Multi-page deep scan", desc: "We crawl up to 12 pages on your store, not just the homepage.", locked: false },
+                    { title: "Platform-specific fix code", desc: "Copy-paste code for Shopify, WooCommerce, and more.", locked: false },
+                    { title: "Priority action plan", desc: "Every issue ranked by impact with estimated point gains.", locked: false },
+                    { title: "Exportable reports", desc: "Download HTML reports to share with your dev team.", locked: false },
+                    { title: "Score history and trends", desc: "Track your progress over time with visual charts.", locked: true },
+                    { title: "Competitor comparison", desc: "Deep scan a competitor and see exactly where you fall behind.", locked: true },
+                  ].map((f, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="w-5 h-5 rounded-full bg-[var(--accent-soft)] border border-[var(--accent-border)] flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-[10px] text-[var(--accent)]">&#10003;</span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-white font-medium">{f.title} {f.locked && <span className="text-[10px] text-[var(--text-dim)] ml-1">Business+</span>}</p>
+                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">{f.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pricing cards inline */}
+              <div className="grid sm:grid-cols-3 gap-4 mb-6">
+                {[
+                  { name: "Growth", price: "$49", plan: "growth", features: ["5 stores", "Weekly rescans", "Fix code + reports"] },
+                  { name: "Business", price: "$149", plan: "business", pop: true, features: ["25 stores", "Competitor comparison", "Daily monitoring"] },
+                  { name: "Enterprise", price: "$399", plan: "enterprise", features: ["Unlimited stores", "White-label reports", "Priority support"] },
+                ].map((tier) => (
+                  <div key={tier.plan} className={`surface rounded-xl p-5 flex flex-col relative ${tier.pop ? "ring-1 ring-[var(--accent-border)]" : ""}`}>
+                    {tier.pop && <span className="absolute -top-2.5 left-4 text-[9px] font-semibold uppercase tracking-wider bg-[var(--accent)] text-black px-2.5 py-0.5 rounded-full">Popular</span>}
+                    <p className="text-sm font-semibold text-white">{tier.name}</p>
+                    <p className="text-2xl font-bold text-white mt-1">{tier.price}<span className="text-xs text-[var(--text-dim)] font-normal">/mo</span></p>
+                    <ul className="mt-3 mb-4 space-y-1.5 flex-1">
+                      {tier.features.map((f, i) => (
+                        <li key={i} className="text-xs text-[var(--text-secondary)] flex gap-2">
+                          <span className="text-[var(--accent)] shrink-0">&#10003;</span>{f}
+                        </li>
+                      ))}
+                    </ul>
+                    <a href={`/signup?plan=${tier.plan}`}
+                      className={`w-full py-2.5 rounded-lg text-sm font-medium text-center block transition ${
+                        tier.pop ? "bg-[var(--accent)] text-black hover:brightness-110" : "bg-[var(--bg-elevated)] text-[var(--text)] border border-[var(--border-light)] hover:bg-[rgba(255,255,255,0.06)]"
+                      }`}>Get started</a>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-[11px] text-[var(--text-dim)] text-center">All plans include a 7-day money-back guarantee. Cancel anytime.</p>
             </div>
           )}
 
