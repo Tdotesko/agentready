@@ -486,7 +486,7 @@ function DashboardInner() {
                   <input type="text" value={scanUrl} onChange={(e) => setScanUrl(e.target.value)} placeholder="yourstore.com" disabled={scanning}
                     className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" />
                   <button type="submit" disabled={scanning || !scanUrl.trim()}
-                    className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
+                    className="px-5 py-2.5 rounded-lg btn-primary text-sm disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
                     {scanning ? "Scanning..." : "Scan"}
                   </button>
                 </form>
@@ -570,7 +570,7 @@ function DashboardInner() {
 
                   <div className="text-center">
                     <p className="text-xs text-[var(--text-secondary)] mb-3">Upgrade to see every finding, get fix code, and track your score over time.</p>
-                    <button onClick={() => setShowUpgradeModal(true)} className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition cursor-pointer">Unlock full report</button>
+                    <button onClick={() => setShowUpgradeModal(true)} className="px-5 py-2.5 rounded-lg btn-primary text-sm transition cursor-pointer">Unlock full report</button>
                   </div>
                 </div>
               )}
@@ -620,7 +620,7 @@ function DashboardInner() {
                     </ul>
                     <button onClick={() => handleUpgrade(tier.plan)}
                       className={`w-full py-2.5 rounded-lg text-sm font-medium text-center block transition cursor-pointer ${
-                        tier.pop ? "bg-[var(--accent)] text-black hover:brightness-110" : "bg-[var(--bg-elevated)] text-[var(--text)] border border-[var(--border-light)] hover:bg-[rgba(255,255,255,0.06)]"
+                        tier.pop ? "bg-[var(--accent)] text-black hover:brightness-110" : "btn-secondary"
                       }`}>Get started</button>
                   </div>
                 ))}
@@ -734,7 +734,7 @@ function DashboardInner() {
                     </div>
                   </div>
                   <button type="submit" disabled={comparing || !compMyUrl.trim() || !compTheirUrl.trim()}
-                    className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed">
+                    className="px-5 py-2.5 rounded-lg btn-primary text-sm disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed">
                     {comparing ? "Scanning both stores..." : "Run comparison"}
                   </button>
                 </form>

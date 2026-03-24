@@ -210,7 +210,7 @@ export default function Home() {
                   placeholder="yourstore.com" disabled={scanning} autoComplete="url" spellCheck={false}
                   className="flex-1 bg-transparent px-5 py-4 text-[15px] text-white placeholder:text-[var(--text-dim)] focus:outline-none" />
                 <button type="submit" disabled={scanning || !url.trim()}
-                  className="m-1.5 px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
+                  className="m-1.5 px-5 py-2.5 rounded-lg btn-primary text-sm cursor-pointer disabled:cursor-not-allowed shrink-0">
                   {scanning ? "Scanning" : "Run scan"}
                 </button>
               </form>
@@ -272,18 +272,9 @@ export default function Home() {
                   Get the full breakdown with every finding, specific fixes, and code snippets you can copy and paste.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <a href="/signup?plan=growth"
-                    className="px-5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] text-[var(--text)] text-sm font-medium hover:bg-[rgba(255,255,255,0.06)] transition inline-block">
-                    Growth $49/mo
-                  </a>
-                  <a href="/signup?plan=business"
-                    className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition inline-block">
-                    Business $149/mo
-                  </a>
-                  <a href="/signup?plan=enterprise"
-                    className="px-5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] text-[var(--text)] text-sm font-medium hover:bg-[rgba(255,255,255,0.06)] transition inline-block">
-                    Enterprise $399/mo
-                  </a>
+                  <a href="/signup?plan=growth" className="px-5 py-2.5 rounded-lg btn-secondary text-sm inline-block text-center">Growth $49/mo</a>
+                  <a href="/signup?plan=business" className="px-5 py-2.5 rounded-lg btn-primary text-sm inline-block text-center">Business $149/mo</a>
+                  <a href="/signup?plan=enterprise" className="px-5 py-2.5 rounded-lg btn-secondary text-sm inline-block text-center">Enterprise $399/mo</a>
                 </div>
                 {user ? (
                   <p className="text-[10px] text-[var(--text-dim)] mt-3">
