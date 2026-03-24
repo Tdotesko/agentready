@@ -1,30 +1,33 @@
-import sgMail from "@sendgrid/mail";
+import { Resend } from "resend";
 
-const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "hello@cartparse.dev";
-const FROM_NAME = process.env.SENDGRID_FROM_NAME || "CartParse";
+const FROM_EMAIL = process.env.EMAIL_FROM || "onboarding@resend.dev";
+const FROM_NAME = process.env.EMAIL_FROM_NAME || "CartParse";
 
-let initialized = false;
-function ensureInit() {
-  if (initialized) return;
-  const key = process.env.SENDGRID_API_KEY;
-  if (key) { sgMail.setApiKey(key); initialized = true; }
+let resend: Resend | null = null;
+function getClient(): Resend | null {
+  if (resend) return resend;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  resend = new Resend(key);
+  return resend;
 }
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<string | null> {
-  ensureInit();
-  if (!process.env.SENDGRID_API_KEY) {
-    console.log(`[EMAIL SKIPPED] No SendGrid key. Would send to ${to}: ${subject}`);
+  const client = getClient();
+  if (!client) {
+    console.log(`[EMAIL SKIPPED] No Resend key. Would send to ${to}: ${subject}`);
     return null;
   }
 
   try {
-    const [response] = await sgMail.send({
+    const { data, error } = await client.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to,
-      from: { email: FROM_EMAIL, name: FROM_NAME },
       subject,
       html,
     });
-    return response.headers["x-message-id"] as string || null;
+    if (error) { console.error("[EMAIL ERROR]", error); return null; }
+    return data?.id || null;
   } catch (err) {
     console.error("[EMAIL ERROR]", err);
     return null;
@@ -53,7 +56,7 @@ export const TEMPLATES = {
 <ul style="line-height:1.8">
 {{findings_list}}
 </ul>
-<p><a href="https://cartparse.dev" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">See your full report</a></p>
+<p><a href="https://cartparse.com" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">See your full report</a></p>
 <p style="color:#999;font-size:12px;margin-top:30px">You're receiving this because we scanned {{store_url}}. <a href="{{unsubscribe_url}}" style="color:#999">Unsubscribe</a></p>
 </div>`,
   },
@@ -68,7 +71,7 @@ export const TEMPLATES = {
 <li><strong>No availability signals</strong> - agents don't know what's in stock</li>
 </ol>
 <p>These are all fixable. We provide the exact code you need to paste into your {{platform}} store.</p>
-<p><a href="https://cartparse.dev/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Get your fix code</a></p>
+<p><a href="https://cartparse.com/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Get your fix code</a></p>
 <p style="color:#999;font-size:12px;margin-top:30px"><a href="{{unsubscribe_url}}" style="color:#999">Unsubscribe</a></p>
 </div>`,
   },
@@ -80,7 +83,7 @@ export const TEMPLATES = {
 <p>The stores that show up when AI agents shop will get the sales. The ones that don't, won't.</p>
 <p>Your store scored <strong>{{score}}/100</strong>. That puts you behind most of your competitors.</p>
 <p>We can show you exactly what to fix and give you the code to do it.</p>
-<p><a href="https://cartparse.dev/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Fix your store now</a></p>
+<p><a href="https://cartparse.com/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Fix your store now</a></p>
 <p style="color:#999;font-size:12px;margin-top:30px"><a href="{{unsubscribe_url}}" style="color:#999">Unsubscribe</a></p>
 </div>`,
   },
@@ -90,7 +93,7 @@ export const TEMPLATES = {
 <p>Thanks for scanning your store with CartParse.</p>
 <p>Your store scored <strong style="font-size:24px;color:{{score_color}}">{{score}}/100</strong> on AI agent readiness.</p>
 <p>Want to see the full breakdown with specific fixes and copy-paste code for your platform?</p>
-<p><a href="https://cartparse.dev/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Unlock your full report</a></p>
+<p><a href="https://cartparse.com/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Unlock your full report</a></p>
 <p style="color:#999;font-size:12px;margin-top:30px"><a href="{{unsubscribe_url}}" style="color:#999">Unsubscribe</a></p>
 </div>`,
   },
@@ -100,7 +103,7 @@ export const TEMPLATES = {
 <p>You scanned {{store_url}} yesterday and scored {{score}}/100.</p>
 <p>The #1 thing you should fix first: <strong>add structured product data (JSON-LD)</strong>. This is what AI agents use to understand your products, prices, and availability.</p>
 <p>Our paid plans give you the exact code to paste into your store, tailored to your platform. Most fixes take under an hour.</p>
-<p><a href="https://cartparse.dev/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Get your fix code ($49/mo)</a></p>
+<p><a href="https://cartparse.com/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Get your fix code ($49/mo)</a></p>
 <p style="color:#999;font-size:12px;margin-top:30px"><a href="{{unsubscribe_url}}" style="color:#999">Unsubscribe</a></p>
 </div>`,
   },
@@ -111,7 +114,7 @@ export const TEMPLATES = {
 <p>Score: <strong style="color:{{score_color}}">{{score}}/100</strong></p>
 <p>AI shopping agents are already live. Visa predicts millions of consumers will use them by the end of 2026. Stores that aren't machine-readable will get skipped.</p>
 <p>Your full report includes every issue found, priority-ranked fixes, and the exact code to implement them.</p>
-<p><a href="https://cartparse.dev/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">See your full report</a></p>
+<p><a href="https://cartparse.com/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">See your full report</a></p>
 <p style="color:#999;font-size:12px;margin-top:30px"><a href="{{unsubscribe_url}}" style="color:#999">Unsubscribe</a></p>
 </div>`,
   },
