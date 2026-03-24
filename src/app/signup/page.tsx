@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 const PLANS: Record<string, { name: string; price: string; features: string[] }> = {
+  free: { name: "Free", price: "$0", features: ["Preview scans", "Score and category grades", "1 store"] },
   growth: { name: "Growth", price: "$49/mo", features: ["5 stores", "Multi-page deep scan", "Fix code and reports"] },
   business: { name: "Business", price: "$149/mo", features: ["25 stores", "Competitor comparison", "Daily monitoring"] },
   enterprise: { name: "Enterprise", price: "$399/mo", features: ["Unlimited stores", "White-label reports", "Priority support"] },
@@ -29,6 +30,11 @@ function SignupForm() {
       const signupData = await signupRes.json();
       if (!signupRes.ok) { setError(signupData.error); setLoading(false); return; }
 
+      if (selectedPlan === "free") {
+        window.location.href = "/dashboard";
+        return;
+      }
+
       const checkoutRes = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan: selectedPlan }) });
       const checkoutData = await checkoutRes.json();
       if (!checkoutRes.ok) { setError(checkoutData.error); setLoading(false); return; }
@@ -49,8 +55,12 @@ function SignupForm() {
 
           <h1 className="text-2xl font-bold text-white mb-2">Create your account</h1>
           <p className="text-sm text-[var(--text-secondary)] mb-8">
-            You&apos;re signing up for the <span className="text-[var(--accent)] font-medium">{plan.name}</span> plan at <span className="text-white font-medium">{plan.price}</span>
-            {selectedPlan !== "business" && <span className="text-[var(--text-dim)]"> &middot; <a href="/signup?plan=business" className="text-[var(--accent)] hover:underline">change plan</a></span>}
+            {selectedPlan === "free" ? (
+              <>Get started with a free account. <a href="/signup?plan=business" className="text-[var(--accent)] hover:underline">View paid plans</a></>
+            ) : (
+              <>You&apos;re signing up for the <span className="text-[var(--accent)] font-medium">{plan.name}</span> plan at <span className="text-white font-medium">{plan.price}</span>
+              {selectedPlan !== "business" && <span className="text-[var(--text-dim)]"> &middot; <a href="/signup?plan=business" className="text-[var(--accent)] hover:underline">change plan</a></span>}</>
+            )}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -71,14 +81,16 @@ function SignupForm() {
 
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl btn-primary text-sm cursor-pointer disabled:cursor-not-allowed">
-              {loading ? "Setting up your account..." : "Continue to payment"}
+              {loading ? "Setting up your account..." : selectedPlan === "free" ? "Create free account" : "Continue to payment"}
             </button>
           </form>
 
-          <p className="text-[11px] text-[var(--text-dim)] mt-4 text-center leading-relaxed">
-            You&apos;ll be redirected to Stripe for secure payment.
-            Cancel anytime from your dashboard.
-          </p>
+          {selectedPlan !== "free" && (
+            <p className="text-[11px] text-[var(--text-dim)] mt-4 text-center leading-relaxed">
+              You&apos;ll be redirected to Stripe for secure payment.
+              Cancel anytime from your dashboard.
+            </p>
+          )}
 
           <p className="text-sm text-[var(--text-dim)] mt-8 text-center">
             Already have an account? <a href="/login" className="text-[var(--accent)] hover:underline font-medium">Sign in</a>

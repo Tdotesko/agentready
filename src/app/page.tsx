@@ -261,7 +261,7 @@ export default function Home() {
             ) : (
               <>
                 <a href="/login" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition">Sign in</a>
-                <a href="/signup" className="text-xs px-3 py-1.5 rounded-lg btn-primary hidden sm:block">Get started</a>
+                <a href="/signup?plan=free" className="text-xs px-3 py-1.5 rounded-lg btn-primary hidden sm:block">Sign up free</a>
               </>
             )}
             {result && (

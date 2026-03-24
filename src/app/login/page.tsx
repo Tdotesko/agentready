@@ -57,7 +57,7 @@ export default function LoginPage() {
           </form>
 
           <p className="text-sm text-[var(--text-dim)] mt-8 text-center">
-            No account yet? <a href="/signup" className="text-[var(--accent)] hover:underline font-medium">Create one</a>
+            No account yet? <a href="/signup?plan=free" className="text-[var(--accent)] hover:underline font-medium">Sign up free</a>
           </p>
         </div>
       </div>
