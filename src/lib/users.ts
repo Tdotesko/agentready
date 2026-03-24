@@ -170,38 +170,80 @@ export async function getAllUsers(): Promise<User[]> {
   return rows.map(rowToUser);
 }
 
-export async function getAdminStats(): Promise<{
-  totalUsers: number;
-  activeSubscriptions: number;
-  totalScans: number;
-  totalLeads: number;
-  revenueByPlan: { plan: string; count: number }[];
-  recentSignups: User[];
-  scansByDay: { date: string; count: number }[];
-}> {
+export async function getAdminStats() {
   const [userCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM users");
   const [activeCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE subscription_status = 'active' OR subscription_status = 'trialing'");
+  const [freeCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE subscription_status IS NULL OR subscription_status = '' OR subscription_status = 'canceled'");
   const [scanCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM scans");
   const [leadCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM leads");
+  const [prospectCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM prospects");
+  const [storeCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM stores");
+  const [queuedEmails] = await query<{ count: string }>("SELECT COUNT(*) as count FROM email_queue WHERE status = 'pending'");
+  const [sentEmails] = await query<{ count: string }>("SELECT COUNT(*) as count FROM email_log");
+  const [apiKeyCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM api_keys");
+  const [webhookCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM webhooks");
+
+  const [avgScore] = await query<{ avg: string }>("SELECT COALESCE(ROUND(AVG(score)), 0) as avg FROM scans");
+  const [todayScans] = await query<{ count: string }>("SELECT COUNT(*) as count FROM scans WHERE scanned_at > NOW() - INTERVAL '24 hours'");
+  const [todaySignups] = await query<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE created_at > NOW() - INTERVAL '24 hours'");
+  const [weekSignups] = await query<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE created_at > NOW() - INTERVAL '7 days'");
+  const [verifiedCount] = await query<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE email_verified = TRUE");
 
   const revenueByPlan = await query<{ plan: string; count: string }>(
     "SELECT COALESCE(plan, 'free') as plan, COUNT(*) as count FROM users WHERE subscription_status = 'active' GROUP BY plan"
   );
 
-  const recentRows = await query<UserRow>("SELECT * FROM users ORDER BY created_at DESC LIMIT 10");
+  const recentRows = await query<UserRow>("SELECT * FROM users ORDER BY created_at DESC LIMIT 15");
 
   const scansByDay = await query<{ date: string; count: string }>(
     "SELECT DATE(scanned_at) as date, COUNT(*) as count FROM scans WHERE scanned_at > NOW() - INTERVAL '30 days' GROUP BY DATE(scanned_at) ORDER BY date"
   );
 
+  const signupsByDay = await query<{ date: string; count: string }>(
+    "SELECT DATE(created_at) as date, COUNT(*) as count FROM users WHERE created_at > NOW() - INTERVAL '30 days' GROUP BY DATE(created_at) ORDER BY date"
+  );
+
+  const topStores = await query<{ url: string; count: string; avg_score: string }>(
+    "SELECT url, COUNT(*) as count, ROUND(AVG(score)) as avg_score FROM scans GROUP BY url ORDER BY count DESC LIMIT 10"
+  );
+
+  const scoreDistribution = await query<{ bucket: string; count: string }>(
+    "SELECT CASE WHEN score >= 75 THEN 'A' WHEN score >= 60 THEN 'B' WHEN score >= 45 THEN 'C' WHEN score >= 30 THEN 'D' ELSE 'F' END as bucket, COUNT(*) as count FROM scans GROUP BY bucket ORDER BY bucket"
+  );
+
+  const platformBreakdown = await query<{ platform: string; count: string }>(
+    "SELECT COALESCE(platform, 'unknown') as platform, COUNT(*) as count FROM prospects GROUP BY platform ORDER BY count DESC"
+  );
+
+  const prospectsByStatus = await query<{ status: string; count: string }>(
+    "SELECT status, COUNT(*) as count FROM prospects GROUP BY status"
+  );
+
   return {
     totalUsers: parseInt(userCount.count),
     activeSubscriptions: parseInt(activeCount.count),
+    freeUsers: parseInt(freeCount.count),
     totalScans: parseInt(scanCount.count),
     totalLeads: parseInt(leadCount.count),
+    totalProspects: parseInt(prospectCount.count),
+    totalStores: parseInt(storeCount.count),
+    queuedEmails: parseInt(queuedEmails.count),
+    sentEmails: parseInt(sentEmails.count),
+    apiKeyCount: parseInt(apiKeyCount.count),
+    webhookCount: parseInt(webhookCount.count),
+    avgScore: parseInt(avgScore.avg),
+    todayScans: parseInt(todayScans.count),
+    todaySignups: parseInt(todaySignups.count),
+    weekSignups: parseInt(weekSignups.count),
+    verifiedUsers: parseInt(verifiedCount.count),
     revenueByPlan: revenueByPlan.map(r => ({ plan: r.plan, count: parseInt(r.count) })),
     recentSignups: recentRows.map(rowToUser),
     scansByDay: scansByDay.map(r => ({ date: r.date, count: parseInt(r.count) })),
+    signupsByDay: signupsByDay.map(r => ({ date: r.date, count: parseInt(r.count) })),
+    topStores: topStores.map(r => ({ url: r.url, count: parseInt(r.count), avgScore: parseInt(r.avg_score) })),
+    scoreDistribution: scoreDistribution.map(r => ({ grade: r.bucket, count: parseInt(r.count) })),
+    platformBreakdown: platformBreakdown.map(r => ({ platform: r.platform, count: parseInt(r.count) })),
+    prospectsByStatus: prospectsByStatus.map(r => ({ status: r.status, count: parseInt(r.count) })),
   };
 }
 
