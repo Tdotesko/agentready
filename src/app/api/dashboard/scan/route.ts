@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser, hasActiveSub } from "@/lib/auth";
-import { scanStore } from "@/lib/scanner";
+import { deepScan } from "@/lib/deep-scanner";
 import { saveScan } from "@/lib/users";
 
 export async function POST(req: NextRequest) {
@@ -12,11 +12,11 @@ export async function POST(req: NextRequest) {
   if (!url || typeof url !== "string") return NextResponse.json({ error: "URL required." }, { status: 400 });
 
   try {
-    const result = await scanStore(url);
+    const result = await deepScan(url);
 
     await saveScan({
       userId: user.id,
-      url: result.url,
+      url: result.rootUrl,
       score: result.overallScore,
       grade: result.grade,
       resultJson: JSON.stringify(result),

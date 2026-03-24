@@ -6,10 +6,6 @@ export const stripe = new Stripe(config.stripe.secretKey, {
 });
 
 export function getPriceId(plan: string): string | null {
-  switch (plan) {
-    case "starter": return config.stripe.prices.starter;
-    case "pro": return config.stripe.prices.pro;
-    case "agency": return config.stripe.prices.agency;
-    default: return null;
-  }
+  const prices = config.stripe.prices as Record<string, string>;
+  return prices[plan] || null;
 }

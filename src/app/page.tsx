@@ -251,17 +251,17 @@ export default function Home() {
                   Get the full breakdown with every finding, specific fixes, and code snippets you can copy and paste.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <a href="/signup?plan=starter"
+                  <a href="/signup?plan=growth"
                     className="px-5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] text-[var(--text)] text-sm font-medium hover:bg-[rgba(255,255,255,0.06)] transition inline-block">
-                    Starter $29/mo
+                    Growth $49/mo
                   </a>
-                  <a href="/signup?plan=pro"
+                  <a href="/signup?plan=business"
                     className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition inline-block">
-                    Pro $99/mo
+                    Business $149/mo
                   </a>
-                  <a href="/signup?plan=agency"
+                  <a href="/signup?plan=enterprise"
                     className="px-5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] text-[var(--text)] text-sm font-medium hover:bg-[rgba(255,255,255,0.06)] transition inline-block">
-                    Agency $249/mo
+                    Enterprise $399/mo
                   </a>
                 </div>
                 <p className="text-[10px] text-[var(--text-dim)] mt-3">Already have an account? <a href="/login" className="text-[var(--accent)] hover:underline">Sign in</a></p>
@@ -336,14 +336,35 @@ export default function Home() {
             <section id="pricing" className="max-w-3xl mx-auto px-6 pb-28">
               <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-6">Pricing</p>
               <div className="grid sm:grid-cols-3 gap-4">
-                <Tier name="Starter" price="$29" plan="starter" desc="For store owners getting started"
-                  features={["Full scan reports", "Up to 3 stores", "Rescan anytime", "Fix priority ranking", "Code snippets for each fix"]}
+                <Tier name="Growth" price="$49" plan="growth" desc="For store owners optimizing for AI"
+                  features={[
+                    "Multi-page deep scan (12 pages)",
+                    "Up to 5 stores",
+                    "Platform-specific fix code",
+                    "Priority-ranked action plan",
+                    "Downloadable HTML reports",
+                    "Weekly rescans",
+                  ]}
                   cta="Get started" />
-                <Tier name="Pro" price="$99" plan="pro" desc="For serious sellers and teams" pop
-                  features={["Everything in Starter", "Unlimited stores", "Weekly automated scans", "Score change alerts", "Competitor benchmarking"]}
+                <Tier name="Business" price="$149" plan="business" desc="For serious sellers and teams" pop
+                  features={[
+                    "Everything in Growth",
+                    "Up to 25 stores",
+                    "Competitor comparison scans",
+                    "Score history tracking",
+                    "Daily automated monitoring",
+                    "Email alerts on score changes",
+                  ]}
                   cta="Start free trial" />
-                <Tier name="Agency" price="$249" plan="agency" desc="For agencies managing clients"
-                  features={["Everything in Pro", "White-label PDF reports", "Bulk scanning API", "Client dashboard", "Priority support"]}
+                <Tier name="Enterprise" price="$399" plan="enterprise" desc="For agencies managing client stores"
+                  features={[
+                    "Everything in Business",
+                    "Unlimited stores",
+                    "White-label PDF reports",
+                    "Bulk scanning API",
+                    "Team seats and client dashboard",
+                    "Priority support",
+                  ]}
                   cta="Get started" />
               </div>
             </section>
