@@ -57,43 +57,6 @@ function CategoryTeaser({ cat }: { cat: ScanCategory }) {
   );
 }
 
-/* ─────────── Category Row (full with expand) ─────────── */
-function CategoryFull({ cat, startOpen }: { cat: ScanCategory; startOpen?: boolean }) {
-  const [open, setOpen] = useState(startOpen ?? false);
-  const pct = Math.round((cat.score / cat.maxScore) * 100);
-  const color = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--yellow)" : "var(--red)";
-
-  return (
-    <div className="border-b border-[var(--border)] last:border-0">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-4 py-3.5 cursor-pointer group text-left">
-        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
-        <span className="flex-1 text-[13px] text-[var(--text)] group-hover:text-white transition">{cat.name}</span>
-        <span className="text-[11px] font-mono text-[var(--text-dim)] tabular-nums">{cat.score}/{cat.maxScore}</span>
-        <div className="w-16 h-[3px] rounded-full bg-[rgba(255,255,255,0.05)] overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
-        </div>
-        <svg className={`w-3.5 h-3.5 text-[var(--text-dim)] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-          viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 6l4 4 4-4" /></svg>
-      </button>
-      {open && (
-        <div className="pb-4 pl-6 space-y-2 fade-up">
-          {cat.findings.map((f, i) => (
-            <p key={`f${i}`} className="text-xs text-[var(--text-secondary)] flex gap-2 leading-relaxed">
-              <span className="text-[var(--green)] shrink-0">&#10003;</span>{f}
-            </p>
-          ))}
-          {cat.recommendations.map((r, i) => (
-            <p key={`r${i}`} className="text-xs flex gap-2 leading-relaxed">
-              <span className="text-[var(--accent)] shrink-0">&#8227;</span>
-              <span className="text-[var(--text)]">{r}</span>
-            </p>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ─────────── Scan Progress ─────────── */
 function ScanProgress() {
   const [i, setI] = useState(0);
@@ -112,8 +75,8 @@ function ScanProgress() {
 }
 
 /* ─────────── Pricing ─────────── */
-function Tier({ name, price, desc, features, cta, pop }: {
-  name: string; price: string; desc: string; features: string[]; cta: string; pop?: boolean;
+function Tier({ name, price, desc, features, cta, pop, plan }: {
+  name: string; price: string; desc: string; features: string[]; cta: string; pop?: boolean; plan: string;
 }) {
   return (
     <div className={`rounded-xl p-6 flex flex-col relative ${
@@ -139,11 +102,11 @@ function Tier({ name, price, desc, features, cta, pop }: {
           </li>
         ))}
       </ul>
-      <button className={`w-full py-2.5 rounded-lg text-sm font-medium transition cursor-pointer ${
+      <a href={`/signup?plan=${plan}`} className={`w-full py-2.5 rounded-lg text-sm font-medium transition text-center block ${
         pop
           ? "bg-[var(--accent)] text-black hover:brightness-110"
           : "bg-[var(--bg-elevated)] text-[var(--text)] border border-[var(--border-light)] hover:bg-[rgba(255,255,255,0.06)]"
-      }`}>{cta}</button>
+      }`}>{cta}</a>
     </div>
   );
 }
@@ -154,16 +117,13 @@ export default function Home() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
-  const [email, setEmail] = useState("");
-  const [unlockState, setUnlockState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [copied, setCopied] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
     if (!url.trim() || scanning) return;
-    setScanning(true); setResult(null); setError(""); setUnlocked(false); setUnlockState("idle");
+    setScanning(true); setResult(null); setError("");
     try {
       const res = await fetch("/api/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: url.trim() }) });
       const data = await res.json();
@@ -171,17 +131,6 @@ export default function Home() {
       else { setResult(data); setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120); }
     } catch { setError("Connection failed. Double check the URL and try again."); }
     finally { setScanning(false); }
-  }
-
-  async function handleUnlock(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || unlockState === "sending") return;
-    setUnlockState("sending");
-    try {
-      const res = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), scannedUrl: result?.url, score: result?.overallScore }) });
-      if (res.ok) { setUnlockState("done"); setUnlocked(true); } else setUnlockState("error");
-    } catch { setUnlockState("error"); }
   }
 
   function share() {
@@ -203,6 +152,7 @@ export default function Home() {
           </a>
           <div className="flex items-center gap-5">
             <a href="#pricing" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition">Pricing</a>
+            <a href="/login" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition">Sign in</a>
             {result && (
               <button onClick={share} className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition cursor-pointer">
                 {copied ? "Copied!" : "Share"}
@@ -278,69 +228,48 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Categories */}
-              {!unlocked ? (
-                <>
-                  <div className="mb-6">
-                    {result.categories.map((cat, i) => <CategoryTeaser key={i} cat={cat} />)}
-                  </div>
+              {/* Category teasers */}
+              <div className="mb-6">
+                {result.categories.map((cat, i) => <CategoryTeaser key={i} cat={cat} />)}
+              </div>
 
-                  {/* Blurred gate */}
-                  <div className="relative mb-2">
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--bg-raised)]/60 to-[var(--bg-raised)] z-10 pointer-events-none rounded-lg" />
-                    <div className="blur-[3px] opacity-30 pointer-events-none select-none py-4 px-2">
-                      <p className="text-xs text-[var(--text)] mb-2">&#10003; Found 3 JSON-LD blocks with Product schema</p>
-                      <p className="text-xs text-[var(--text)] mb-2">&#8227; Add og:price:amount meta tags for machine-readable pricing</p>
-                      <p className="text-xs text-[var(--text)] mb-2">&#10003; sitemap.xml is accessible and well-formed</p>
-                      <p className="text-xs text-[var(--text)]">&#8227; Add structured review data for social proof signals</p>
-                    </div>
-                  </div>
+              {/* Blurred details + signup gate */}
+              <div className="relative mb-2">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--bg-raised)]/60 to-[var(--bg-raised)] z-10 pointer-events-none rounded-lg" />
+                <div className="blur-[3px] opacity-30 pointer-events-none select-none py-4 px-2">
+                  <p className="text-xs text-[var(--text)] mb-2">&#10003; Found 3 JSON-LD blocks with Product schema</p>
+                  <p className="text-xs text-[var(--text)] mb-2">&#8227; Add og:price:amount meta tags for machine-readable pricing</p>
+                  <p className="text-xs text-[var(--text)] mb-2">&#10003; sitemap.xml is accessible and well-formed</p>
+                  <p className="text-xs text-[var(--text)]">&#8227; Add structured review data for social proof signals</p>
+                </div>
+              </div>
 
-                  {/* Unlock */}
-                  <div className="rounded-xl p-5 bg-[var(--bg-elevated)] border border-[var(--border-light)]">
-                    <p className="text-sm font-semibold text-white mb-1">Unlock your full report</p>
-                    <p className="text-xs text-[var(--text-secondary)] mb-4">
-                      See every finding and exactly how to fix it, ordered by impact. Your first report is on us.
-                    </p>
-                    <form onSubmit={handleUnlock} className="flex gap-2">
-                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                        placeholder="you@company.com" disabled={unlockState === "sending"}
-                        className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" />
-                      <button type="submit" disabled={unlockState === "sending"}
-                        className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
-                        {unlockState === "sending" ? "..." : "Unlock"}
-                      </button>
-                    </form>
-                    {unlockState === "error" && <p className="text-xs text-[var(--red)] mt-2">Something went wrong. Try again.</p>}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mb-6">
-                    {result.categories.map((cat, i) => <CategoryFull key={i} cat={cat} startOpen={cat.status === "fail"} />)}
-                  </div>
-                  <div className="rounded-lg px-4 py-3 bg-[var(--green-soft)] border border-[rgba(52,211,153,0.15)]">
-                    <p className="text-xs text-[var(--green)] font-medium">Full report unlocked. Want weekly monitoring? Check out our paid plans below.</p>
-                  </div>
-                </>
-              )}
+              {/* Signup CTA */}
+              <div className="rounded-xl p-5 bg-[var(--bg-elevated)] border border-[var(--border-light)] text-center">
+                <p className="text-sm font-semibold text-white mb-1">See what&apos;s broken and how to fix it</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-4">
+                  Get the full breakdown with every finding, specific fixes, and code snippets you can copy and paste.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  <a href="/signup?plan=starter"
+                    className="px-5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] text-[var(--text)] text-sm font-medium hover:bg-[rgba(255,255,255,0.06)] transition inline-block">
+                    Starter $29/mo
+                  </a>
+                  <a href="/signup?plan=pro"
+                    className="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition inline-block">
+                    Pro $99/mo
+                  </a>
+                  <a href="/signup?plan=agency"
+                    className="px-5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] text-[var(--text)] text-sm font-medium hover:bg-[rgba(255,255,255,0.06)] transition inline-block">
+                    Agency $249/mo
+                  </a>
+                </div>
+                <p className="text-[10px] text-[var(--text-dim)] mt-3">Already have an account? <a href="/login" className="text-[var(--accent)] hover:underline">Sign in</a></p>
+              </div>
             </div>
 
-            {/* Post-unlock upsell */}
-            {unlocked && (
-              <div className="mt-6 surface rounded-xl p-6">
-                <p className="text-sm font-semibold text-white mb-1">Your competitors are already optimizing for this</p>
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
-                  Get weekly automated scans, alerts when your score drops, and step-by-step fix guides with code you can copy and paste.
-                </p>
-                <a href="#pricing" className="inline-block px-4 py-2 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition">
-                  See plans
-                </a>
-              </div>
-            )}
-
             <div className="mt-8 text-center">
-              <button onClick={() => { setResult(null); setUrl(""); setError(""); setUnlocked(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              <button onClick={() => { setResult(null); setUrl(""); setError(""); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className="text-xs text-[var(--text-dim)] hover:text-[var(--text-secondary)] transition cursor-pointer">
                 Scan another store &rarr;
               </button>
@@ -407,15 +336,15 @@ export default function Home() {
             <section id="pricing" className="max-w-3xl mx-auto px-6 pb-28">
               <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-6">Pricing</p>
               <div className="grid sm:grid-cols-3 gap-4">
-                <Tier name="Starter" price="$29" desc="For store owners getting started"
+                <Tier name="Starter" price="$29" plan="starter" desc="For store owners getting started"
                   features={["Full scan reports", "Up to 3 stores", "Rescan anytime", "Fix priority ranking", "Code snippets for each fix"]}
                   cta="Get started" />
-                <Tier name="Pro" price="$99" desc="For serious sellers and teams" pop
+                <Tier name="Pro" price="$99" plan="pro" desc="For serious sellers and teams" pop
                   features={["Everything in Starter", "Unlimited stores", "Weekly automated scans", "Score change alerts", "Competitor benchmarking"]}
                   cta="Start free trial" />
-                <Tier name="Agency" price="$249" desc="For agencies managing clients"
+                <Tier name="Agency" price="$249" plan="agency" desc="For agencies managing clients"
                   features={["Everything in Pro", "White-label PDF reports", "Bulk scanning API", "Client dashboard", "Priority support"]}
-                  cta="Talk to us" />
+                  cta="Get started" />
               </div>
             </section>
           </>
