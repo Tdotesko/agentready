@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { validateAndNormalizeUrl } from "./validate-url";
 
 export interface ScanCategory {
   name: string;
@@ -15,7 +16,11 @@ export interface ScanResult {
   grade: string;
   categories: ScanCategory[];
   scannedAt: string;
+  scanDurationMs: number;
 }
+
+const MAX_RESPONSE_BYTES = 5 * 1024 * 1024; // 5MB
+const FETCH_TIMEOUT_MS = 15_000;
 
 function gradeFromScore(score: number): string {
   if (score >= 90) return "A+";
@@ -26,23 +31,102 @@ function gradeFromScore(score: number): string {
   return "F";
 }
 
-function categoryStatus(
-  score: number,
-  max: number
-): "pass" | "warn" | "fail" {
+function categoryStatus(score: number, max: number): "pass" | "warn" | "fail" {
   const pct = max > 0 ? score / max : 0;
   if (pct >= 0.7) return "pass";
   if (pct >= 0.4) return "warn";
   return "fail";
 }
 
-function checkStructuredData(html: string, $: cheerio.CheerioAPI): ScanCategory {
+async function safeFetch(
+  url: string,
+  signal: AbortSignal
+): Promise<{ html: string; headers: Record<string, string> }> {
+  const response = await fetch(url, {
+    signal,
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (compatible; AgentReadyBot/1.0; +https://agentready.dev)",
+      Accept: "text/html,application/xhtml+xml",
+    },
+    redirect: "follow",
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("text/html") && !contentType.includes("xhtml")) {
+    throw new Error("URL does not return HTML content");
+  }
+
+  const contentLength = response.headers.get("content-length");
+  if (contentLength && parseInt(contentLength) > MAX_RESPONSE_BYTES) {
+    throw new Error("Page is too large to scan");
+  }
+
+  // Stream with size limit
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("Could not read response");
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > MAX_RESPONSE_BYTES) {
+      reader.cancel();
+      throw new Error("Page is too large to scan (>5MB)");
+    }
+    chunks.push(value);
+  }
+
+  const decoder = new TextDecoder("utf-8");
+  const html = chunks.map((c) => decoder.decode(c, { stream: true })).join("") +
+    decoder.decode();
+
+  const headers: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    headers[key.toLowerCase()] = value;
+  });
+
+  return { html, headers };
+}
+
+async function checkResourceExists(
+  baseUrl: string,
+  path: string,
+  signal: AbortSignal
+): Promise<boolean> {
+  try {
+    const url = new URL(path, baseUrl).toString();
+    const res = await fetch(url, {
+      method: "HEAD",
+      signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; AgentReadyBot/1.0; +https://agentready.dev)",
+      },
+      redirect: "follow",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function checkStructuredData(
+  html: string,
+  $: cheerio.CheerioAPI
+): ScanCategory {
   const findings: string[] = [];
   const recommendations: string[] = [];
   let score = 0;
   const maxScore = 30;
 
-  // Check for JSON-LD
   const jsonLdScripts = $('script[type="application/ld+json"]');
   if (jsonLdScripts.length > 0) {
     score += 10;
@@ -54,44 +138,85 @@ function checkStructuredData(html: string, $: cheerio.CheerioAPI): ScanCategory 
 
     jsonLdScripts.each((_, el) => {
       try {
-        const data = JSON.parse($(el).text());
-        const types = Array.isArray(data) ? data.map((d: { "@type"?: string }) => d["@type"]) : [data["@type"]];
-        if (types.some((t: string) => t === "Product")) hasProduct = true;
-        if (types.some((t: string) => t === "Organization" || t === "WebSite")) hasOrganization = true;
-        if (types.some((t: string) => t === "BreadcrumbList")) hasBreadcrumb = true;
+        const raw = $(el).text();
+        if (raw.length > 100_000) return; // skip absurdly large blocks
+        const data = JSON.parse(raw);
+        const items = Array.isArray(data) ? data : [data];
+
+        function extractTypes(obj: Record<string, unknown>): string[] {
+          const types: string[] = [];
+          if (typeof obj["@type"] === "string") types.push(obj["@type"]);
+          if (Array.isArray(obj["@type"])) types.push(...obj["@type"]);
+          if (Array.isArray(obj["@graph"])) {
+            for (const item of obj["@graph"]) {
+              if (item && typeof item === "object") {
+                types.push(...extractTypes(item as Record<string, unknown>));
+              }
+            }
+          }
+          return types;
+        }
+
+        for (const item of items) {
+          if (!item || typeof item !== "object") continue;
+          const types = extractTypes(item as Record<string, unknown>);
+          if (types.some((t) => t === "Product")) hasProduct = true;
+          if (types.some((t) => t === "Organization" || t === "WebSite"))
+            hasOrganization = true;
+          if (types.some((t) => t === "BreadcrumbList")) hasBreadcrumb = true;
+        }
       } catch {
         findings.push("Found malformed JSON-LD block");
       }
     });
 
-    if (hasProduct) { score += 8; findings.push("Product schema detected"); }
-    else recommendations.push("Add Product structured data (JSON-LD) with name, price, availability, description, images");
+    if (hasProduct) {
+      score += 8;
+      findings.push("Product schema detected");
+    } else {
+      recommendations.push(
+        "Add Product structured data (JSON-LD) with name, price, availability, description, images"
+      );
+    }
 
-    if (hasOrganization) { score += 4; findings.push("Organization/WebSite schema detected"); }
-    else recommendations.push("Add Organization schema with name, logo, contact info");
+    if (hasOrganization) {
+      score += 4;
+      findings.push("Organization/WebSite schema detected");
+    } else {
+      recommendations.push(
+        "Add Organization schema with name, logo, contact info"
+      );
+    }
 
-    if (hasBreadcrumb) { score += 3; findings.push("Breadcrumb schema detected"); }
-    else recommendations.push("Add BreadcrumbList schema for better navigation context");
-
+    if (hasBreadcrumb) {
+      score += 3;
+      findings.push("Breadcrumb schema detected");
+    } else {
+      recommendations.push(
+        "Add BreadcrumbList schema for better navigation context"
+      );
+    }
   } else {
     findings.push("No JSON-LD structured data found");
-    recommendations.push("Add JSON-LD structured data — this is the #1 way AI agents understand your products");
+    recommendations.push(
+      "Add JSON-LD structured data — this is the #1 way AI agents understand your products"
+    );
   }
 
-  // Check for microdata
   const microdata = $("[itemtype]");
   if (microdata.length > 0) {
     score += 3;
     findings.push(`Found ${microdata.length} microdata element(s)`);
   }
 
-  // Check for Open Graph
   const ogTags = $('meta[property^="og:"]');
   if (ogTags.length >= 3) {
     score += 2;
     findings.push(`Found ${ogTags.length} Open Graph tags`);
   } else {
-    recommendations.push("Add Open Graph meta tags (og:title, og:description, og:image, og:price:amount)");
+    recommendations.push(
+      "Add Open Graph meta tags (og:title, og:description, og:image, og:price:amount)"
+    );
   }
 
   return {
@@ -110,7 +235,6 @@ function checkProductData($: cheerio.CheerioAPI): ScanCategory {
   let score = 0;
   const maxScore = 25;
 
-  // Check meta description
   const metaDesc = $('meta[name="description"]').attr("content");
   if (metaDesc && metaDesc.length > 50) {
     score += 4;
@@ -118,28 +242,40 @@ function checkProductData($: cheerio.CheerioAPI): ScanCategory {
   } else if (metaDesc) {
     score += 2;
     findings.push("Meta description present but short");
-    recommendations.push("Expand meta description to 120-160 chars with key product details");
+    recommendations.push(
+      "Expand meta description to 120-160 chars with key product details"
+    );
   } else {
-    recommendations.push("Add a meta description — AI agents use this to understand page content");
+    recommendations.push(
+      "Add a meta description — AI agents use this to understand page content"
+    );
   }
 
-  // Check for price indicators
-  const priceElements = $('[class*="price"], [data-price], [itemprop="price"], .money, .product-price');
-  const priceMetaOg = $('meta[property="og:price:amount"], meta[property="product:price:amount"]');
+  const priceMetaOg = $(
+    'meta[property="og:price:amount"], meta[property="product:price:amount"]'
+  );
+  const priceElements = $(
+    '[class*="price"], [data-price], [itemprop="price"], .money, .product-price'
+  );
   if (priceMetaOg.length > 0) {
     score += 6;
     findings.push("Machine-readable price meta tags found");
   } else if (priceElements.length > 0) {
     score += 3;
     findings.push("Price elements found in HTML but not in meta tags");
-    recommendations.push("Add og:price:amount and og:price:currency meta tags for machine-readable pricing");
+    recommendations.push(
+      "Add og:price:amount and og:price:currency meta tags for machine-readable pricing"
+    );
   } else {
-    recommendations.push("Ensure product prices are in structured data or meta tags, not just rendered via JavaScript");
+    recommendations.push(
+      "Ensure product prices are in structured data or meta tags, not just rendered via JavaScript"
+    );
   }
 
-  // Check for product images
   const images = $("img");
-  const imagesWithAlt = $("img[alt]").filter((_, el) => ($(el).attr("alt") || "").length > 5);
+  const imagesWithAlt = $("img[alt]").filter(
+    (_, el) => ($(el).attr("alt") || "").length > 5
+  );
   if (images.length > 0) {
     score += 3;
     findings.push(`Found ${images.length} images`);
@@ -148,20 +284,24 @@ function checkProductData($: cheerio.CheerioAPI): ScanCategory {
       findings.push("Most images have descriptive alt text");
     } else {
       score += 1;
-      recommendations.push("Add descriptive alt text to all product images — agents use alt text to understand products");
+      recommendations.push(
+        "Add descriptive alt text to all product images — agents use alt text to understand products"
+      );
     }
   }
 
-  // Check for availability indicators
-  const availabilityIndicators = $('[itemprop="availability"], [class*="stock"], [class*="inventory"], [data-availability]');
+  const availabilityIndicators = $(
+    '[itemprop="availability"], [class*="stock"], [class*="inventory"], [data-availability]'
+  );
   if (availabilityIndicators.length > 0) {
     score += 4;
     findings.push("Product availability indicators found");
   } else {
-    recommendations.push("Add machine-readable availability status (in stock / out of stock) via structured data");
+    recommendations.push(
+      "Add machine-readable availability status (in stock / out of stock) via structured data"
+    );
   }
 
-  // Check for product titles / headings
   const h1 = $("h1");
   if (h1.length === 1) {
     score += 4;
@@ -169,7 +309,9 @@ function checkProductData($: cheerio.CheerioAPI): ScanCategory {
   } else if (h1.length > 1) {
     score += 2;
     findings.push(`Multiple H1 tags found (${h1.length})`);
-    recommendations.push("Use a single H1 per page for clear product identification");
+    recommendations.push(
+      "Use a single H1 per page for clear product identification"
+    );
   }
 
   return {
@@ -182,79 +324,102 @@ function checkProductData($: cheerio.CheerioAPI): ScanCategory {
   };
 }
 
-function checkMachineAccessibility(html: string, $: cheerio.CheerioAPI, headers: Record<string, string>): ScanCategory {
+function checkMachineAccessibility(
+  $: cheerio.CheerioAPI,
+  headers: Record<string, string>,
+  hasSitemap: boolean,
+  hasRobotsTxt: boolean
+): ScanCategory {
   const findings: string[] = [];
   const recommendations: string[] = [];
   let score = 0;
   const maxScore = 20;
 
-  // Check canonical URL
   const canonical = $('link[rel="canonical"]');
   if (canonical.length > 0) {
-    score += 4;
+    score += 3;
     findings.push("Canonical URL set");
   } else {
-    recommendations.push("Add a canonical URL tag to prevent duplicate content issues for agents");
+    recommendations.push(
+      "Add a canonical URL tag to prevent duplicate content issues for agents"
+    );
   }
 
-  // Check for robots meta
   const robotsMeta = $('meta[name="robots"]');
   const robotsContent = robotsMeta.attr("content") || "";
   if (robotsMeta.length > 0 && !robotsContent.includes("noindex")) {
-    score += 3;
+    score += 2;
     findings.push("Page is indexable by agents");
   } else if (robotsContent.includes("noindex")) {
     findings.push("Page is set to noindex — AI agents may not discover this");
-    recommendations.push("Remove noindex if you want AI shopping agents to find your products");
+    recommendations.push(
+      "Remove noindex if you want AI shopping agents to find your products"
+    );
   } else {
-    score += 2; // no robots meta = default indexable
+    score += 2;
     findings.push("No robots meta tag (defaults to indexable)");
   }
 
-  // Check for clean URL structure
   const langAttr = $("html").attr("lang");
   if (langAttr) {
     score += 2;
     findings.push(`Language declared: ${langAttr}`);
   } else {
-    recommendations.push("Add lang attribute to <html> tag for language identification");
+    recommendations.push(
+      "Add lang attribute to <html> tag for language identification"
+    );
   }
 
-  // Check for sitemap reference
-  const sitemapLink = $('link[rel="sitemap"]');
-  if (sitemapLink.length > 0) {
+  if (hasSitemap) {
     score += 4;
-    findings.push("Sitemap link found in page");
+    findings.push("sitemap.xml is accessible");
   } else {
-    recommendations.push("Add a sitemap link in your HTML and ensure /sitemap.xml is accessible");
+    recommendations.push(
+      "Add a sitemap.xml — this is critical for AI agents to discover all your products"
+    );
   }
 
-  // Check for RSS/Atom feed (useful for product updates)
-  const feedLink = $('link[type="application/rss+xml"], link[type="application/atom+xml"]');
+  if (hasRobotsTxt) {
+    score += 2;
+    findings.push("robots.txt is accessible");
+  } else {
+    recommendations.push(
+      "Add a robots.txt file to guide AI agent crawlers"
+    );
+  }
+
+  const feedLink = $(
+    'link[type="application/rss+xml"], link[type="application/atom+xml"]'
+  );
   if (feedLink.length > 0) {
-    score += 3;
+    score += 2;
     findings.push("RSS/Atom feed detected — agents can track product updates");
   } else {
-    recommendations.push("Add an RSS/Atom feed for new products so agents can track inventory changes");
+    recommendations.push(
+      "Add an RSS/Atom feed for new products so agents can track inventory changes"
+    );
   }
 
-  // Check content-type header
   const contentType = headers["content-type"] || "";
   if (contentType.includes("utf-8")) {
-    score += 2;
+    score += 1;
     findings.push("UTF-8 encoding confirmed");
   }
 
-  // Check for clean semantic HTML
   const nav = $("nav");
   const main = $("main");
   const footer = $("footer");
-  const semanticCount = (nav.length > 0 ? 1 : 0) + (main.length > 0 ? 1 : 0) + (footer.length > 0 ? 1 : 0);
+  const semanticCount =
+    (nav.length > 0 ? 1 : 0) +
+    (main.length > 0 ? 1 : 0) +
+    (footer.length > 0 ? 1 : 0);
   if (semanticCount >= 2) {
     score += 2;
     findings.push("Good semantic HTML structure");
   } else {
-    recommendations.push("Use semantic HTML elements (nav, main, footer) for better agent parsing");
+    recommendations.push(
+      "Use semantic HTML elements (nav, main, footer) for better agent parsing"
+    );
   }
 
   return {
@@ -273,40 +438,50 @@ function checkAgentCommerce($: cheerio.CheerioAPI): ScanCategory {
   let score = 0;
   const maxScore = 15;
 
-  // Check for add-to-cart functionality visibility
-  const cartButtons = $('[class*="add-to-cart"], [id*="add-to-cart"], button:contains("Add to Cart"), [data-action="add-to-cart"], form[action*="cart"]');
+  const cartButtons = $(
+    '[class*="add-to-cart"], [id*="add-to-cart"], [data-action="add-to-cart"], form[action*="cart"], button[name="add"], input[name="add"]'
+  );
   if (cartButtons.length > 0) {
     score += 4;
     findings.push("Add-to-cart functionality detected");
   } else {
-    recommendations.push("Ensure add-to-cart actions are identifiable in the DOM (not purely JS-rendered)");
+    recommendations.push(
+      "Ensure add-to-cart actions are identifiable in the DOM (not purely JS-rendered)"
+    );
   }
 
-  // Check for API hints
   const apiLinks = $('link[rel="api"], meta[name="api-url"]');
   if (apiLinks.length > 0) {
     score += 5;
     findings.push("API endpoint references found");
   } else {
-    recommendations.push("Consider exposing a product API or catalog feed for direct agent access");
+    recommendations.push(
+      "Consider exposing a product API or catalog feed for direct agent access"
+    );
   }
 
-  // Check for shipping/returns policy links
-  const policyLinks = $('a[href*="policy"], a[href*="shipping"], a[href*="returns"], a[href*="refund"]');
+  const policyLinks = $(
+    'a[href*="policy"], a[href*="shipping"], a[href*="returns"], a[href*="refund"]'
+  );
   if (policyLinks.length >= 2) {
     score += 3;
     findings.push("Policy pages (shipping/returns) are linked");
   } else {
-    recommendations.push("Link to shipping and returns policies from product pages — agents check these before recommending purchases");
+    recommendations.push(
+      "Link to shipping and returns policies from product pages — agents check these before recommending purchases"
+    );
   }
 
-  // Check for reviews/ratings
-  const reviews = $('[itemprop="aggregateRating"], [itemprop="review"], [class*="review"], [class*="rating"]');
+  const reviews = $(
+    '[itemprop="aggregateRating"], [itemprop="review"], [class*="review"], [class*="rating"]'
+  );
   if (reviews.length > 0) {
     score += 3;
     findings.push("Reviews/ratings section detected");
   } else {
-    recommendations.push("Add structured review/rating data — agents prioritize products with social proof");
+    recommendations.push(
+      "Add structured review/rating data — agents prioritize products with social proof"
+    );
   }
 
   return {
@@ -319,14 +494,16 @@ function checkAgentCommerce($: cheerio.CheerioAPI): ScanCategory {
   };
 }
 
-function checkPerformance(html: string, $: cheerio.CheerioAPI): ScanCategory {
+function checkPerformance(
+  html: string,
+  $: cheerio.CheerioAPI
+): ScanCategory {
   const findings: string[] = [];
   const recommendations: string[] = [];
   let score = 0;
   const maxScore = 10;
 
-  // Check page size
-  const sizeKB = Buffer.byteLength(html, "utf8") / 1024;
+  const sizeKB = new TextEncoder().encode(html).byteLength / 1024;
   if (sizeKB < 200) {
     score += 3;
     findings.push(`Page size: ${Math.round(sizeKB)}KB (lean)`);
@@ -335,10 +512,11 @@ function checkPerformance(html: string, $: cheerio.CheerioAPI): ScanCategory {
     findings.push(`Page size: ${Math.round(sizeKB)}KB (moderate)`);
   } else {
     findings.push(`Page size: ${Math.round(sizeKB)}KB (heavy)`);
-    recommendations.push("Reduce page size — heavy pages are slower for agents to parse");
+    recommendations.push(
+      "Reduce page size — heavy pages are slower for agents to parse"
+    );
   }
 
-  // Check number of scripts
   const scripts = $("script[src]");
   if (scripts.length < 10) {
     score += 2;
@@ -348,24 +526,26 @@ function checkPerformance(html: string, $: cheerio.CheerioAPI): ScanCategory {
     findings.push(`${scripts.length} external scripts (moderate)`);
   } else {
     findings.push(`${scripts.length} external scripts (excessive)`);
-    recommendations.push("Reduce external scripts — they can block agent parsing and slow page loads");
+    recommendations.push(
+      "Reduce external scripts — they can block agent parsing and slow page loads"
+    );
   }
 
-  // Check for lazy loading
   const lazyImages = $('img[loading="lazy"]');
   if (lazyImages.length > 0) {
     score += 2;
     findings.push("Lazy loading implemented for images");
   }
 
-  // Check for render-blocking concerns (heavy JS dependency)
   const inlineScripts = $("script:not([src])");
   const totalJSBlocks = scripts.length + inlineScripts.length;
   if (totalJSBlocks < 15) {
     score += 3;
     findings.push("Reasonable JavaScript footprint");
   } else {
-    recommendations.push("Heavy JavaScript dependency may mean content isn't available without JS execution — agents prefer server-rendered content");
+    recommendations.push(
+      "Heavy JavaScript dependency may mean content isn't available without JS execution — agents prefer server-rendered content"
+    );
   }
 
   return {
@@ -378,44 +558,26 @@ function checkPerformance(html: string, $: cheerio.CheerioAPI): ScanCategory {
   };
 }
 
-export async function scanStore(url: string): Promise<ScanResult> {
-  // Normalize URL
-  let normalizedUrl = url.trim();
-  if (!normalizedUrl.startsWith("http")) {
-    normalizedUrl = "https://" + normalizedUrl;
-  }
+export async function scanStore(rawUrl: string): Promise<ScanResult> {
+  const startTime = Date.now();
+  const normalizedUrl = validateAndNormalizeUrl(rawUrl);
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const response = await fetch(normalizedUrl, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; AgentReadyBot/1.0; +https://agentready.dev)",
-        Accept: "text/html,application/xhtml+xml",
-      },
-      redirect: "follow",
-    });
+    const [{ html, headers }, hasSitemap, hasRobotsTxt] = await Promise.all([
+      safeFetch(normalizedUrl, controller.signal),
+      checkResourceExists(normalizedUrl, "/sitemap.xml", controller.signal),
+      checkResourceExists(normalizedUrl, "/robots.txt", controller.signal),
+    ]);
 
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const html = await response.text();
     const $ = cheerio.load(html);
-
-    const headers: Record<string, string> = {};
-    response.headers.forEach((value, key) => {
-      headers[key.toLowerCase()] = value;
-    });
 
     const categories = [
       checkStructuredData(html, $),
       checkProductData($),
-      checkMachineAccessibility(html, $, headers),
+      checkMachineAccessibility($, headers, hasSitemap, hasRobotsTxt),
       checkAgentCommerce($),
       checkPerformance(html, $),
     ];
@@ -430,9 +592,9 @@ export async function scanStore(url: string): Promise<ScanResult> {
       grade: gradeFromScore(overallScore),
       categories,
       scannedAt: new Date().toISOString(),
+      scanDurationMs: Date.now() - startTime,
     };
-  } catch (error) {
+  } finally {
     clearTimeout(timeout);
-    throw error;
   }
 }
