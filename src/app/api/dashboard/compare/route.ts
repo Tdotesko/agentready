@@ -3,7 +3,7 @@ import { getCurrentUser, hasActiveSub } from "@/lib/auth";
 import { deepScan } from "@/lib/deep-scanner";
 import type { Plan } from "@/lib/config";
 
-const COMPARE_PLANS: Plan[] = ["pro", "agency"];
+const COMPARE_PLANS: Plan[] = ["pro", "agency", "business", "enterprise"];
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();

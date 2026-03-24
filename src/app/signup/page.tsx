@@ -6,7 +6,7 @@ import { Suspense } from "react";
 
 function SignupForm() {
   const params = useSearchParams();
-  const selectedPlan = params.get("plan") || "pro";
+  const selectedPlan = params.get("plan") || "business";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -45,7 +45,7 @@ function SignupForm() {
     }
   }
 
-  const planNames: Record<string, string> = { starter: "Starter ($29/mo)", pro: "Pro ($99/mo)", agency: "Agency ($249/mo)" };
+  const planNames: Record<string, string> = { growth: "Growth ($49/mo)", business: "Business ($149/mo)", enterprise: "Enterprise ($399/mo)", starter: "Starter ($29/mo)", pro: "Pro ($99/mo)", agency: "Agency ($249/mo)" };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
@@ -58,8 +58,8 @@ function SignupForm() {
         <h1 className="text-xl font-bold text-white mb-1">Create your account</h1>
         <p className="text-sm text-[var(--text-secondary)] mb-6">
           Plan: <span className="text-[var(--accent)]">{planNames[selectedPlan] || "Pro ($99/mo)"}</span>
-          {selectedPlan !== "pro" && (
-            <> &middot; <a href="/signup?plan=pro" className="underline hover:text-white">change</a></>
+          {selectedPlan !== "business" && (
+            <> &middot; <a href="/signup?plan=business" className="underline hover:text-white">change</a></>
           )}
         </p>
 

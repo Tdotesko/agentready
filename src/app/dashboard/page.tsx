@@ -126,7 +126,7 @@ export default function Dashboard() {
   const [compError, setCompError] = useState("");
 
   const isActive = user?.subscriptionStatus === "active" || user?.subscriptionStatus === "trialing";
-  const canCompare = user?.plan === "pro" || user?.plan === "agency";
+  const canCompare = user?.plan === "pro" || user?.plan === "agency" || user?.plan === "business" || user?.plan === "enterprise";
 
   const loadData = useCallback(async () => {
     try {
@@ -173,7 +173,7 @@ export default function Dashboard() {
     if (!viewResult) return;
     const res = await fetch("/api/dashboard/export", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scanData: viewResult, whiteLabel: user?.plan === "agency" }),
+      body: JSON.stringify({ scanData: viewResult, whiteLabel: user?.plan === "agency" || user?.plan === "enterprise" }),
     });
     const html = await res.text();
     const blob = new Blob([html], { type: "text/html" });

@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
   const { scanData, whiteLabel } = await req.json();
   if (!scanData) return NextResponse.json({ error: "Scan data required." }, { status: 400 });
 
-  const isAgency = user.plan === "agency";
+  const isAgency = user.plan === "agency" || user.plan === "enterprise";
   const html = generateReportHtml(scanData as DeepScanResult, whiteLabel && isAgency);
 
   return new NextResponse(html, {
