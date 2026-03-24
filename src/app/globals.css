@@ -120,6 +120,13 @@ body::before {
 }
 .slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+@keyframes scanDown {
+  0% { top: 0%; opacity: 0; }
+  20% { opacity: 0.6; }
+  80% { opacity: 0.6; }
+  100% { top: 100%; opacity: 0; }
+}
+
 @keyframes count-spin {
   to { transform: rotate(360deg); }
 }

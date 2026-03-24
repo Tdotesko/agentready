@@ -575,6 +575,103 @@ function DashboardInner() {
                 </div>
               )}
 
+              {/* Demo dashboard preview */}
+              <div className="relative mb-6">
+                <div className="absolute -inset-1 bg-gradient-to-b from-transparent via-transparent to-[var(--bg)] z-20 pointer-events-none" />
+                <div className="surface rounded-2xl p-5 overflow-hidden">
+                  <p className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-4">Dashboard preview</p>
+
+                  {/* Demo stat cards */}
+                  <div className="grid grid-cols-4 gap-3 mb-5">
+                    {[
+                      { label: "Score", value: "67", color: "var(--yellow)" },
+                      { label: "Pages", value: "10", color: "white" },
+                      { label: "Issues", value: "17", color: "var(--red)" },
+                      { label: "Fixes", value: "12", color: "var(--green)" },
+                    ].map((s, i) => (
+                      <div key={i} className="bg-[var(--bg)] rounded-xl p-3 text-center">
+                        <p className="text-lg font-mono font-bold tabular-nums" style={{ color: s.color }}>{s.value}</p>
+                        <p className="text-[9px] text-[var(--text-dim)] uppercase tracking-wider mt-0.5">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Demo chart */}
+                  <div className="bg-[var(--bg)] rounded-xl p-4 mb-5">
+                    <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider mb-3">Score trend</p>
+                    <svg viewBox="0 0 400 80" className="w-full" preserveAspectRatio="xMidYMid meet">
+                      <defs>
+                        <linearGradient id="demoGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.2" />
+                          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      {[0.25, 0.5, 0.75].map((p, i) => (
+                        <line key={i} x1="0" y1={p * 80} x2="400" y2={p * 80} stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
+                      ))}
+                      <polygon points="0,80 0,65 50,58 100,52 150,48 200,40 250,35 300,28 350,22 400,18 400,80" fill="url(#demoGrad)" />
+                      <polyline points="0,65 50,58 100,52 150,48 200,40 250,35 300,28 350,22 400,18" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      {[[0,65],[100,52],[200,40],[300,28],[400,18]].map(([x,y], i) => (
+                        <circle key={i} cx={x} cy={y} r="3" fill="var(--bg)" stroke="var(--accent)" strokeWidth="1.5" />
+                      ))}
+                    </svg>
+                  </div>
+
+                  {/* Demo category bars */}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="bg-[var(--bg)] rounded-xl p-4">
+                      <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider mb-3">Categories</p>
+                      {[
+                        { name: "Structured Data", pct: 30, color: "var(--red)" },
+                        { name: "Product Signals", pct: 68, color: "var(--yellow)" },
+                        { name: "Machine Access", pct: 85, color: "var(--green)" },
+                        { name: "Commerce Ready", pct: 20, color: "var(--red)" },
+                        { name: "Performance", pct: 60, color: "var(--yellow)" },
+                      ].map((cat, i) => (
+                        <div key={i} className="mb-2 last:mb-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[10px] text-[var(--text-secondary)]">{cat.name}</span>
+                            <span className="text-[10px] font-mono text-[var(--text-dim)]">{cat.pct}%</span>
+                          </div>
+                          <div className="h-1.5 bg-[rgba(255,255,255,0.04)] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${cat.pct}%`, background: cat.color }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-[var(--bg)] rounded-xl p-4">
+                      <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider mb-3">Top fixes</p>
+                      {[
+                        { impact: "high", fix: "Add JSON-LD Product schema", pts: 15 },
+                        { impact: "high", fix: "Add price meta tags", pts: 8 },
+                        { impact: "medium", fix: "Improve image alt text", pts: 5 },
+                        { impact: "medium", fix: "Add review markup", pts: 5 },
+                      ].map((a, i) => (
+                        <div key={i} className="flex items-center gap-2 mb-2 last:mb-0">
+                          <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${a.impact === "high" ? "bg-[var(--red-soft)] text-[var(--red)]" : "bg-[var(--yellow-soft)] text-[var(--yellow)]"}`}>{a.impact}</span>
+                          <span className="text-[10px] text-[var(--text-secondary)] flex-1 truncate">{a.fix}</span>
+                          <span className="text-[10px] font-mono text-[var(--text-dim)]">+{a.pts}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lock overlay */}
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg)]/40 backdrop-blur-[2px] rounded-2xl">
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent-border)] flex items-center justify-center mx-auto mb-3">
+                      <svg className="w-6 h-6 text-[var(--accent)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-white mb-1">Unlock your full dashboard</p>
+                    <p className="text-xs text-[var(--text-secondary)] mb-4 max-w-xs">Charts, action plans, fix code, competitor comparison, and more.</p>
+                    <button onClick={() => setShowUpgradeModal(true)} className="px-6 py-2.5 rounded-xl btn-primary text-sm cursor-pointer">Choose a plan</button>
+                  </div>
+                </div>
+              </div>
+
               {/* What you get */}
               <div className="surface rounded-xl p-6 mb-6">
                 <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-5">What you get with a paid plan</p>
