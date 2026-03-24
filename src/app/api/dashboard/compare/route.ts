@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   if (!hasActiveSub(user)) return NextResponse.json({ error: "Active subscription required." }, { status: 403 });
-  if (!user.plan || !COMPARE_PLANS.includes(user.plan)) {
+  if (!user.isAdmin && (!user.plan || !COMPARE_PLANS.includes(user.plan))) {
     return NextResponse.json({ error: "Competitor comparison requires a Business or Enterprise plan." }, { status: 403 });
   }
 

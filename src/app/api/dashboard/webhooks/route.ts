@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   if (!hasActiveSub(user)) return NextResponse.json({ error: "Active subscription required." }, { status: 403 });
-  if (!["business", "enterprise", "pro", "agency"].includes(user.plan || "")) {
+  if (!user.isAdmin && !["business", "enterprise", "pro", "agency"].includes(user.plan || "")) {
     return NextResponse.json({ error: "Webhooks require a Business or Enterprise plan." }, { status: 403 });
   }
 
