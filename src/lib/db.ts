@@ -148,5 +148,44 @@ export async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_prospects_url ON prospects(url);
     CREATE INDEX IF NOT EXISTS idx_email_queue_pending ON email_queue(status, send_after);
     CREATE INDEX IF NOT EXISTS idx_email_log_recipient ON email_log(recipient_email);
+
+    -- Stores (user's monitored stores)
+    CREATE TABLE IF NOT EXISTS stores (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      url TEXT NOT NULL,
+      name TEXT,
+      auto_rescan BOOLEAN DEFAULT FALSE,
+      rescan_interval TEXT DEFAULT 'weekly',
+      last_rescan_at TIMESTAMPTZ,
+      last_score INTEGER,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, url)
+    );
+
+    -- API keys
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      key_hash TEXT NOT NULL,
+      key_prefix TEXT NOT NULL,
+      name TEXT,
+      last_used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    -- Webhooks
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      url TEXT NOT NULL,
+      events TEXT[] DEFAULT ARRAY['scan.completed'],
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_stores_user ON stores(user_id);
+    CREATE INDEX IF NOT EXISTS idx_stores_rescan ON stores(auto_rescan, last_rescan_at);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
   `);
 }
