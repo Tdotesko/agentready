@@ -585,7 +585,7 @@ export async function deepScan(rawUrl: string): Promise<DeepScanResult> {
   const totalMax = aggregatedCategories.reduce((s, c) => s + c.maxScore, 0);
   const overallScore = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
 
-  const gradeFromScore = (s: number) => s >= 85 ? "A+" : s >= 75 ? "A" : s >= 60 ? "B" : s >= 45 ? "C" : s >= 30 ? "D" : "F";
+  const gradeFromScore = (s: number) => s >= 92 ? "A+" : s >= 82 ? "A" : s >= 72 ? "B" : s >= 58 ? "C" : s >= 40 ? "D" : "F";
 
   // 6. Action plan
   const actionPlan = buildActionPlan(aggregatedCategories, platform, rootUrl);

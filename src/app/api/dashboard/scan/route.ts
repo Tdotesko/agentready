@@ -3,6 +3,23 @@ import { getCurrentUser, hasActiveSub } from "@/lib/auth";
 import { deepScan } from "@/lib/deep-scanner";
 import { saveScan } from "@/lib/users";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { query } from "@/lib/db";
+
+async function fireWebhooks(userId: string, event: string, payload: unknown) {
+  try {
+    const hooks = await query<{ url: string }>(
+      "SELECT url FROM webhooks WHERE user_id = $1 AND is_active = TRUE AND $2 = ANY(events)",
+      [userId, event]
+    );
+    for (const hook of hooks) {
+      fetch(hook.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, data: payload, timestamp: new Date().toISOString() }),
+      }).catch(() => {}); // Fire and forget
+    }
+  } catch { /* webhooks are non-critical */ }
+}
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -30,6 +47,16 @@ export async function POST(req: NextRequest) {
       grade: result.grade,
       resultJson: JSON.stringify(result),
       scannedAt: result.scannedAt,
+    });
+
+    // Fire webhooks
+    fireWebhooks(user.id, "scan.completed", {
+      url: result.rootUrl,
+      score: result.overallScore,
+      grade: result.grade,
+      platform: result.platform,
+      totalPages: result.totalPages,
+      issues: result.actionPlan.length,
     });
 
     return NextResponse.json(result);

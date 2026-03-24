@@ -37,11 +37,11 @@ const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 15_000;
 
 function gradeFromScore(score: number): string {
-  if (score >= 85) return "A+";
-  if (score >= 75) return "A";
-  if (score >= 60) return "B";
-  if (score >= 45) return "C";
-  if (score >= 30) return "D";
+  if (score >= 92) return "A+";
+  if (score >= 82) return "A";
+  if (score >= 72) return "B";
+  if (score >= 58) return "C";
+  if (score >= 40) return "D";
   return "F";
 }
 
