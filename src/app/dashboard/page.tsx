@@ -357,7 +357,7 @@ function DashboardInner() {
       <aside className="w-56 shrink-0 border-r border-[var(--border)] bg-[var(--bg-raised)] hidden lg:flex flex-col">
         <div className="p-5 border-b border-[var(--border)]">
           <a href="/dashboard" className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black">C</span>
+            <img src="/logo-icon.png" alt="CartParse" className="w-7 h-7 rounded-md" />
             <span className="text-sm font-semibold text-white">CartParse</span>
           </a>
         </div>
@@ -414,7 +414,7 @@ function DashboardInner() {
         {/* Mobile header */}
         <header className="lg:hidden border-b border-[var(--border)] px-5 py-3 flex items-center justify-between bg-[var(--bg-raised)]">
           <a href="/dashboard" className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded bg-[var(--accent)] flex items-center justify-center text-[10px] font-bold text-black">C</span>
+            <img src="/logo-icon.png" alt="CartParse" className="w-6 h-6 rounded" />
             <span className="text-sm font-semibold text-white">CartParse</span>
           </a>
           <div className="flex items-center gap-3">

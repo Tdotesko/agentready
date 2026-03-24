@@ -27,7 +27,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-sm">
           <a href="/" className="flex items-center gap-2.5 mb-12">
-            <span className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center text-xs font-bold text-black">C</span>
+            <img src="/logo-icon.png" alt="CartParse" className="w-8 h-8 rounded-lg" />
             <span className="text-base font-semibold text-white">CartParse</span>
           </a>
 

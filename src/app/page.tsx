@@ -250,7 +250,7 @@ export default function Home() {
       <nav className="fixed top-0 inset-x-0 z-50 glass">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black shadow-lg shadow-[var(--accent-soft)]">C</span>
+            <img src="/logo-icon.png" alt="CartParse" className="w-7 h-7 rounded-md" />
             <span className="text-sm font-semibold tracking-tight text-white">CartParse</span>
           </a>
           <div className="flex items-center gap-6">
