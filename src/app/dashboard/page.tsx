@@ -373,8 +373,7 @@ function DashboardInner() {
       <aside className="w-56 shrink-0 border-r border-[var(--border)] bg-[var(--bg-raised)] hidden lg:flex flex-col">
         <div className="p-5 border-b border-[var(--border)]">
           <a href="/dashboard" className="flex items-center gap-2.5">
-            <img src="/logo-icon.png" alt="CartParse" className="w-7 h-7 rounded-md" />
-            <span className="text-sm font-semibold text-white">CartParse</span>
+            <img src="/logo.png" alt="CartParse" className="h-8 w-auto" />
           </a>
         </div>
         <nav className="flex-1 p-3 space-y-0.5">
@@ -436,8 +435,7 @@ function DashboardInner() {
         {/* Mobile header */}
         <header className="lg:hidden border-b border-[var(--border)] px-5 py-3 flex items-center justify-between bg-[var(--bg-raised)]">
           <a href="/dashboard" className="flex items-center gap-2">
-            <img src="/logo-icon.png" alt="CartParse" className="w-6 h-6 rounded" />
-            <span className="text-sm font-semibold text-white">CartParse</span>
+            <img src="/logo.png" alt="CartParse" className="h-7 w-auto" />
           </a>
           <div className="flex items-center gap-3">
             <button onClick={openPortal} className="text-[11px] text-[var(--text-dim)] cursor-pointer">Billing</button>

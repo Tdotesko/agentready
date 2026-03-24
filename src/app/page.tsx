@@ -250,8 +250,7 @@ export default function Home() {
       <nav className="fixed top-0 inset-x-0 z-50 glass">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5">
-            <img src="/logo-icon.png" alt="CartParse" className="w-7 h-7 rounded-md" />
-            <span className="text-sm font-semibold tracking-tight text-white">CartParse</span>
+            <img src="/logo.png" alt="CartParse" className="h-8 w-auto" />
           </a>
           <div className="flex items-center gap-6">
             <a href="#features" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition hidden sm:block">Features</a>

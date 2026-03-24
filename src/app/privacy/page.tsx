@@ -4,8 +4,7 @@ export default function PrivacyPage() {
       <nav className="border-b border-[var(--border)] px-6 py-4">
         <div className="max-w-3xl mx-auto">
           <a href="/" className="flex items-center gap-2.5">
-            <img src="/logo-icon.png" alt="CartParse" className="w-7 h-7 rounded-md" />
-            <span className="text-sm font-semibold text-white">CartParse</span>
+            <img src="/logo.png" alt="CartParse" className="h-8 w-auto" />
           </a>
         </div>
       </nav>

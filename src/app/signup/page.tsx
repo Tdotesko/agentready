@@ -49,8 +49,7 @@ function SignupForm() {
       <div className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-sm">
           <a href="/" className="flex items-center gap-2.5 mb-12">
-            <img src="/logo-icon.png" alt="CartParse" className="w-8 h-8 rounded-lg" />
-            <span className="text-base font-semibold text-white">CartParse</span>
+            <img src="/logo.png" alt="CartParse" className="h-10 w-auto" />
           </a>
 
           <h1 className="text-2xl font-bold text-white mb-2">Create your account</h1>

@@ -16,8 +16,7 @@ export default function UnsubscribePage() {
     <div className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-sm text-center">
         <a href="/" className="flex items-center gap-2.5 justify-center mb-12">
-          <img src="/logo-icon.png" alt="CartParse" className="w-8 h-8 rounded-lg" />
-          <span className="text-base font-semibold text-white">CartParse</span>
+          <img src="/logo.png" alt="CartParse" className="h-10 w-auto" />
         </a>
 
         {done ? (

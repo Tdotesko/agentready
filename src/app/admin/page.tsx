@@ -148,8 +148,7 @@ export default function AdminPortal() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/dashboard" className="flex items-center gap-2">
-              <img src="/logo-icon.png" alt="CartParse" className="w-7 h-7 rounded-md" />
-              <span className="text-sm font-semibold text-white">CartParse</span>
+              <img src="/logo.png" alt="CartParse" className="h-8 w-auto" />
             </a>
             <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-semibold uppercase tracking-wider">Admin</span>
           </div>
