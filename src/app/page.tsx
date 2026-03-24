@@ -125,7 +125,16 @@ export default function Home() {
     fetch("/api/auth/me").then(res => {
       if (res.ok) return res.json();
       return null;
-    }).then(data => { if (data?.email) setUser(data); }).catch(() => {});
+    }).then(data => {
+      if (data?.email) {
+        // Paying users go straight to dashboard
+        if (data.subscriptionStatus === "active" || data.subscriptionStatus === "trialing") {
+          window.location.href = "/dashboard";
+          return;
+        }
+        setUser(data);
+      }
+    }).catch(() => {});
   }, []);
 
   async function handleScan(e: React.FormEvent) {
