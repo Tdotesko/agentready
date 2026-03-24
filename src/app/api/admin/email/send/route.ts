@@ -16,15 +16,21 @@ export async function POST(req: NextRequest) {
   if (!prospect) return NextResponse.json({ error: "Prospect not found" }, { status: 404 });
   if (!prospect.email) return NextResponse.json({ error: "No email address found for this prospect. Add one manually." }, { status: 400 });
 
+  const platformNames: Record<string, string> = {
+    shopify: "Shopify", woocommerce: "WooCommerce", bigcommerce: "BigCommerce",
+    magento: "Magento", squarespace: "Squarespace", wix: "Wix",
+  };
+  const platformDisplay = platformNames[prospect.platform || ""] || "your";
+
   const vars = {
     store_name: prospect.store_name || new URL(prospect.url).hostname,
     store_url: prospect.url,
     score: String(prospect.score || 0),
     score_color: scoreColor(prospect.score || 0),
     grade: prospect.grade || "?",
-    platform: prospect.platform || "your",
+    platform: platformDisplay,
     findings_list: "<li>Details available in full scan report</li>",
-    unsubscribe_url: "https://cartparse.dev",
+    unsubscribe_url: "https://cartparse.com",
   };
 
   await queueColdOutreach(prospect.id, prospect.email, vars);

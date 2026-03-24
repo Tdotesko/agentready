@@ -92,7 +92,7 @@ export const TEMPLATES = {
     html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;color:#333">
 <p>Thanks for scanning your store with CartParse.</p>
 <p>Your store scored <strong style="font-size:24px;color:{{score_color}}">{{score}}/100</strong> on AI agent readiness.</p>
-<p>Want to see the full breakdown with specific fixes and copy-paste code for your platform?</p>
+<p>Want to see the full breakdown with specific fixes and copy-paste code tailored to your store?</p>
 <p><a href="https://cartparse.com/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Unlock your full report</a></p>
 <p style="color:#999;font-size:12px;margin-top:30px"><a href="{{unsubscribe_url}}" style="color:#999">Unsubscribe</a></p>
 </div>`,
@@ -102,7 +102,7 @@ export const TEMPLATES = {
     html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;color:#333">
 <p>You scanned {{store_url}} yesterday and scored {{score}}/100.</p>
 <p>The #1 thing you should fix first: <strong>add structured product data (JSON-LD)</strong>. This is what AI agents use to understand your products, prices, and availability.</p>
-<p>Our paid plans give you the exact code to paste into your store, tailored to your platform. Most fixes take under an hour.</p>
+<p>Our paid plans give you the exact code to paste into your store, tailored to whatever platform you use (Shopify, WooCommerce, BigCommerce, and more). Most fixes take under an hour.</p>
 <p><a href="https://cartparse.com/signup?plan=growth" style="display:inline-block;padding:12px 24px;background:#e8a443;color:#000;text-decoration:none;border-radius:8px;font-weight:600">Get your fix code ($49/mo)</a></p>
 <p style="color:#999;font-size:12px;margin-top:30px"><a href="{{unsubscribe_url}}" style="color:#999">Unsubscribe</a></p>
 </div>`,
