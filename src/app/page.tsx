@@ -238,8 +238,8 @@ export default function Home() {
 
   function share() {
     const text = `Just scored ${result?.overallScore}/100 on AI agent readiness for my store. See how yours does:`;
-    if (navigator.share) navigator.share({ text, url: "https://cartparse.dev" });
-    else { navigator.clipboard.writeText(`${text} https://cartparse.dev`); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+    if (navigator.share) navigator.share({ text, url: "https://cartparse.com" });
+    else { navigator.clipboard.writeText(`${text} https://cartparse.com`); setCopied(true); setTimeout(() => setCopied(false), 2000); }
   }
 
   const issues = result ? result.categories.reduce((n, c) => n + c.recommendations.length, 0) : 0;
@@ -473,6 +473,8 @@ export default function Home() {
           <div className="flex gap-6">
             <a href="#features" className="hover:text-[var(--text-secondary)] transition">Features</a>
             <a href="#pricing" className="hover:text-[var(--text-secondary)] transition">Pricing</a>
+            <a href="/terms" className="hover:text-[var(--text-secondary)] transition">Terms</a>
+            <a href="/privacy" className="hover:text-[var(--text-secondary)] transition">Privacy</a>
             <a href="/api/health" className="hover:text-[var(--text-secondary)] transition">Status</a>
           </div>
         </div>

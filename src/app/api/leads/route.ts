@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
             store_name: storeName,
             score: String(cleanScore),
             score_color: scoreColor(cleanScore),
-            unsubscribe_url: "https://cartparse.dev",
+            unsubscribe_url: "https://cartparse.com",
           });
         }
       }

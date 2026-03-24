@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
         store_name: storeName,
         score: String(lead.score || 0),
         score_color: scoreColor(lead.score || 0),
-        unsubscribe_url: "https://cartparse.dev",
+        unsubscribe_url: "https://cartparse.com",
       });
       queued++;
     }
