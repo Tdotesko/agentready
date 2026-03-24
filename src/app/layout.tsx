@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgentReady — Is Your Store Ready for AI Shopping Agents?",
+  title: "AgentReady | AI Shopping Agent Readiness Scanner",
   description:
-    "Scan your e-commerce store and find out if AI shopping agents can discover, understand, and buy your products. Free instant analysis.",
+    "Find out if AI shopping agents can discover and buy from your store. Free instant scan.",
   openGraph: {
-    title: "AgentReady — AI Agent Readiness Scanner",
+    title: "AgentReady | Can AI Agents Buy From Your Store?",
     description:
-      "Can AI shopping agents buy from your store? Find out in 10 seconds.",
+      "Scan your e-commerce store and see what AI shopping agents actually see. Free instant analysis.",
     type: "website",
   },
 };
@@ -34,7 +34,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-screen flex flex-col font-sans">
+      <body className="min-h-screen flex flex-col font-sans text-[#111]">
         {children}
       </body>
     </html>
