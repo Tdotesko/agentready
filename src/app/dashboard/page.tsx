@@ -238,10 +238,10 @@ function DashboardInner() {
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
   const [newApiKey, setNewApiKey] = useState("");
 
-  const isActive = user?.subscriptionStatus === "active" || user?.subscriptionStatus === "trialing";
-  const canCompare = isActive && ["pro", "agency", "business", "enterprise"].includes(user?.plan || "");
-  const isEnterprise = ["enterprise", "agency"].includes(user?.plan || "");
-  const canWebhook = ["business", "enterprise", "pro", "agency"].includes(user?.plan || "");
+  const isActive = user?.subscriptionStatus === "active" || user?.subscriptionStatus === "trialing" || user?.isAdmin === true;
+  const canCompare = isActive && (user?.isAdmin || ["pro", "agency", "business", "enterprise"].includes(user?.plan || ""));
+  const isEnterprise = user?.isAdmin || ["enterprise", "agency"].includes(user?.plan || "");
+  const canWebhook = user?.isAdmin || ["business", "enterprise", "pro", "agency"].includes(user?.plan || "");
   const isFree = !isActive && !justUpgraded;
 
   const loadData = useCallback(async () => {
@@ -250,7 +250,8 @@ function DashboardInner() {
       if (!meRes.ok) { window.location.href = "/login"; return; }
       const userData = await meRes.json();
       setUser(userData);
-      if (userData.subscriptionStatus === "active" || userData.subscriptionStatus === "trialing") {
+      const isActiveUser = userData.subscriptionStatus === "active" || userData.subscriptionStatus === "trialing" || userData.isAdmin;
+      if (isActiveUser) {
         try { const r = await fetch("/api/dashboard/scans"); if (r.ok) setScans(await r.json()); } catch {}
         try { const r = await fetch("/api/dashboard/stores"); if (r.ok) setStores(await r.json()); } catch {}
         try { const r = await fetch("/api/v1/keys"); if (r.ok) setApiKeys(await r.json()); } catch {}

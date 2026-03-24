@@ -75,6 +75,7 @@ export default function AdminSystemPage() {
           { label: "Process Email Queue", desc: "Send pending emails from the queue", endpoint: "/api/cron/process-emails" },
           { label: "Nurture Leads", desc: "Queue nurture emails for unconverted leads", endpoint: "/api/cron/nurture-leads" },
           { label: "Rescan Stores", desc: "Auto-rescan stores with monitoring enabled", endpoint: "/api/cron/rescan-stores" },
+          { label: "Discover Leads", desc: "Auto-find and contact low-scoring stores", endpoint: "/api/cron/discover-leads" },
         ].map((cron) => (
           <div key={cron.endpoint} className="surface rounded-xl p-4 flex items-center gap-4">
             <div className="flex-1">

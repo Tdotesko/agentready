@@ -217,7 +217,7 @@ export default function Home() {
   useEffect(() => {
     fetch("/api/auth/me").then(res => res.ok ? res.json() : null).then(data => {
       if (data?.email) {
-        if (data.subscriptionStatus === "active" || data.subscriptionStatus === "trialing") { window.location.href = "/dashboard"; return; }
+        if (data.subscriptionStatus === "active" || data.subscriptionStatus === "trialing" || data.isAdmin) { window.location.href = "/dashboard"; return; }
         setUser(data);
       }
     }).catch(() => {});

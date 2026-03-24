@@ -57,5 +57,6 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export function hasActiveSub(user: User): boolean {
+  if (user.isAdmin) return true;
   return user.subscriptionStatus === "active" || user.subscriptionStatus === "trialing";
 }
