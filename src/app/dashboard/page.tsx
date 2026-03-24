@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import type { DeepScanResult, ActionItem } from "@/lib/deep-scanner";
 
 interface UserData { id: string; email: string; plan?: string; subscriptionStatus?: string; }
@@ -107,7 +109,9 @@ function PageBreakdown({ result }: { result: DeepScanResult }) {
 }
 
 /* ── Main Dashboard ── */
-export default function Dashboard() {
+function DashboardInner() {
+  const searchParams = useSearchParams();
+  const justUpgraded = searchParams.get("upgraded") === "true";
   const [user, setUser] = useState<UserData | null>(null);
   const [scans, setScans] = useState<ScanRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,15 +134,43 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [meRes, scansRes] = await Promise.all([fetch("/api/auth/me"), fetch("/api/dashboard/scans")]);
+      const meRes = await fetch("/api/auth/me");
       if (!meRes.ok) { window.location.href = "/login"; return; }
-      setUser(await meRes.json());
-      if (scansRes.ok) setScans(await scansRes.json());
+      const userData = await meRes.json();
+      setUser(userData);
+
+      // Only fetch scans if user has active sub
+      if (userData.subscriptionStatus === "active" || userData.subscriptionStatus === "trialing") {
+        try {
+          const scansRes = await fetch("/api/dashboard/scans");
+          if (scansRes.ok) setScans(await scansRes.json());
+        } catch { /* scans fetch failed, not critical */ }
+      }
     } catch { window.location.href = "/login"; }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Poll for subscription activation after Stripe redirect
+  useEffect(() => {
+    if (!justUpgraded || isActive) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.subscriptionStatus === "active" || data.subscriptionStatus === "trialing") {
+            setUser(data);
+            clearInterval(interval);
+            window.history.replaceState({}, "", "/dashboard");
+            loadData();
+          }
+        }
+      } catch { /* keep polling */ }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [justUpgraded, isActive, loadData]);
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
@@ -221,6 +253,8 @@ export default function Dashboard() {
                 {planNames[user?.plan || ""] || "Active"} plan &middot;
                 <button onClick={openPortal} disabled={portalLoading} className="text-[var(--accent)] hover:underline ml-1 cursor-pointer">{portalLoading ? "Loading..." : "Manage billing"}</button>
               </p>
+            ) : justUpgraded ? (
+              <p className="text-sm text-[var(--accent)]">Processing your payment... This usually takes a few seconds.</p>
             ) : (
               <p className="text-sm text-[var(--red)]">No active subscription. <a href="/#pricing" className="text-[var(--accent)] hover:underline">Pick a plan</a></p>
             )}
@@ -429,5 +463,13 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm text-[var(--text-dim)]">Loading...</div>}>
+      <DashboardInner />
+    </Suspense>
   );
 }
