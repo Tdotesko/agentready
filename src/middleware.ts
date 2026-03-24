@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 
 const ALLOWED_ORIGINS = new Set([
   "https://agentready-production-5931.up.railway.app",
-  "https://agentready.dev",
+  "https://cartparse.com",
+  "https://www.cartparse.com",
   "http://localhost:3000",
 ]);
 

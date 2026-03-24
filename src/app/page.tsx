@@ -238,8 +238,8 @@ export default function Home() {
 
   function share() {
     const text = `Just scored ${result?.overallScore}/100 on AI agent readiness for my store. See how yours does:`;
-    if (navigator.share) navigator.share({ text, url: "https://agentready.dev" });
-    else { navigator.clipboard.writeText(`${text} https://agentready.dev`); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+    if (navigator.share) navigator.share({ text, url: "https://cartparse.dev" });
+    else { navigator.clipboard.writeText(`${text} https://cartparse.dev`); setCopied(true); setTimeout(() => setCopied(false), 2000); }
   }
 
   const issues = result ? result.categories.reduce((n, c) => n + c.recommendations.length, 0) : 0;
@@ -250,8 +250,8 @@ export default function Home() {
       <nav className="fixed top-0 inset-x-0 z-50 glass">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black shadow-lg shadow-[var(--accent-soft)]">A</span>
-            <span className="text-sm font-semibold tracking-tight text-white">AgentReady</span>
+            <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black shadow-lg shadow-[var(--accent-soft)]">C</span>
+            <span className="text-sm font-semibold tracking-tight text-white">CartParse</span>
           </a>
           <div className="flex items-center gap-6">
             <a href="#features" className="text-xs text-[var(--text-dim)] hover:text-[var(--text)] transition hidden sm:block">Features</a>
@@ -469,7 +469,7 @@ export default function Home() {
 
       <footer className="border-t border-[var(--border)] px-6 py-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[var(--text-dim)]">
-          <span>AgentReady</span>
+          <span>CartParse</span>
           <div className="flex gap-6">
             <a href="#features" className="hover:text-[var(--text-secondary)] transition">Features</a>
             <a href="#pricing" className="hover:text-[var(--text-secondary)] transition">Pricing</a>

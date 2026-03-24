@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/"],
       },
     ],
-    sitemap: "https://agentready.dev/sitemap.xml",
+    sitemap: "https://cartparse.dev/sitemap.xml",
   };
 }

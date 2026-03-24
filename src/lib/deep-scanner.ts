@@ -91,7 +91,7 @@ async function discoverFromSitemap(baseUrl: string): Promise<string[]> {
     const sitemapUrl = new URL("/sitemap.xml", baseUrl).toString();
     const res = await fetch(sitemapUrl, {
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; AgentReadyBot/1.0)" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; CartParseBot/1.0)" },
       redirect: "follow",
     });
     if (!res.ok) return [];
@@ -111,7 +111,7 @@ async function discoverFromSitemap(baseUrl: string): Promise<string[]> {
           try {
             const childRes = await fetch(childUrl, {
               signal: controller.signal,
-              headers: { "User-Agent": "Mozilla/5.0 (compatible; AgentReadyBot/1.0)" },
+              headers: { "User-Agent": "Mozilla/5.0 (compatible; CartParseBot/1.0)" },
               redirect: "follow",
             });
             if (childRes.ok) {
@@ -510,7 +510,7 @@ async function fetchHtml(url: string): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CRAWL_TIMEOUT);
   try {
-    const res = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; AgentReadyBot/1.0)", Accept: "text/html" }, redirect: "follow" });
+    const res = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; CartParseBot/1.0)", Accept: "text/html" }, redirect: "follow" });
     if (!res.ok) return "";
     const text = await res.text();
     return text.slice(0, 500_000);

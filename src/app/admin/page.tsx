@@ -146,8 +146,8 @@ export default function AdminPortal() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/dashboard" className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black">A</span>
-              <span className="text-sm font-semibold text-white">AgentReady</span>
+              <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black">C</span>
+              <span className="text-sm font-semibold text-white">CartParse</span>
             </a>
             <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-semibold uppercase tracking-wider">Admin</span>
           </div>

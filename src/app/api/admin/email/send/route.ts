@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     grade: prospect.grade || "?",
     platform: prospect.platform || "your",
     findings_list: "<li>Details available in full scan report</li>",
-    unsubscribe_url: "https://agentready.dev",
+    unsubscribe_url: "https://cartparse.dev",
   };
 
   await queueColdOutreach(prospect.id, prospect.email, vars);

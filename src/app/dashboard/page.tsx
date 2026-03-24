@@ -318,7 +318,7 @@ function DashboardInner() {
       body: JSON.stringify({ scanData: viewResult, whiteLabel: user?.plan === "agency" || user?.plan === "enterprise" }) });
     const html = await res.text();
     const blob = new Blob([html], { type: "text/html" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `agentready-report-${Date.now()}.html`; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `cartparse-report-${Date.now()}.html`; a.click();
   }
 
   async function openPortal() {
@@ -347,8 +347,8 @@ function DashboardInner() {
       <aside className="w-56 shrink-0 border-r border-[var(--border)] bg-[var(--bg-raised)] hidden lg:flex flex-col">
         <div className="p-5 border-b border-[var(--border)]">
           <a href="/dashboard" className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black">A</span>
-            <span className="text-sm font-semibold text-white">AgentReady</span>
+            <span className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[11px] font-bold text-black">C</span>
+            <span className="text-sm font-semibold text-white">CartParse</span>
           </a>
         </div>
         <nav className="flex-1 p-3 space-y-0.5">
@@ -404,8 +404,8 @@ function DashboardInner() {
         {/* Mobile header */}
         <header className="lg:hidden border-b border-[var(--border)] px-5 py-3 flex items-center justify-between bg-[var(--bg-raised)]">
           <a href="/dashboard" className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded bg-[var(--accent)] flex items-center justify-center text-[10px] font-bold text-black">A</span>
-            <span className="text-sm font-semibold text-white">AgentReady</span>
+            <span className="w-6 h-6 rounded bg-[var(--accent)] flex items-center justify-center text-[10px] font-bold text-black">C</span>
+            <span className="text-sm font-semibold text-white">CartParse</span>
           </a>
           <div className="flex items-center gap-3">
             <button onClick={openPortal} className="text-[11px] text-[var(--text-dim)] cursor-pointer">Billing</button>
@@ -506,7 +506,7 @@ function DashboardInner() {
           {navSection === "scan" && isFree && (
             <div>
               <div className="mb-6">
-                <h1 className="text-lg font-bold text-white mb-1">Welcome to AgentReady</h1>
+                <h1 className="text-lg font-bold text-white mb-1">Welcome to CartParse</h1>
                 <p className="text-sm text-[var(--text-secondary)]">Try a free preview scan, then upgrade to unlock full reports and fix code.</p>
               </div>
 

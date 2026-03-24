@@ -61,7 +61,7 @@ export async function safeFetch(
   const response = await fetch(url, {
     signal,
     headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; AgentReadyBot/1.0; +https://agentready.dev)",
+      "User-Agent": "Mozilla/5.0 (compatible; CartParseBot/1.0; +https://cartparse.dev)",
       Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.9",
     },
@@ -129,7 +129,7 @@ export async function safeFetch(
 async function checkResourceExists(baseUrl: string, path: string, signal: AbortSignal): Promise<boolean> {
   try {
     const url = new URL(path, baseUrl).toString();
-    const res = await fetch(url, { method: "HEAD", signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; AgentReadyBot/1.0)" }, redirect: "follow" });
+    const res = await fetch(url, { method: "HEAD", signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; CartParseBot/1.0)" }, redirect: "follow" });
     return res.ok;
   } catch { return false; }
 }
