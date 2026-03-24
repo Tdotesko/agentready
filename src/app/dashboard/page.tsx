@@ -214,6 +214,11 @@ function DashboardInner() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [navSection, setNavSection] = useState<"scan" | "history" | "compare">("scan");
 
+  const [freeScanUrl, setFreeScanUrl] = useState("");
+  const [freeScanning, setFreeScanning] = useState(false);
+  const [freeScanResult, setFreeScanResult] = useState<{ overallScore: number; grade: string; categories: Array<{ name: string; score: number; maxScore: number; status: string }> } | null>(null);
+  const [freeScanError, setFreeScanError] = useState("");
+
   const [compMyUrl, setCompMyUrl] = useState("");
   const [compTheirUrl, setCompTheirUrl] = useState("");
   const [comparing, setComparing] = useState(false);
@@ -266,6 +271,19 @@ function DashboardInner() {
       setViewResult(data); setActiveTab("overview"); setScanUrl(""); loadData();
     } catch { setScanError("Scan failed."); }
     finally { setScanning(false); }
+  }
+
+  async function handleFreeScan(e: React.FormEvent) {
+    e.preventDefault();
+    if (!freeScanUrl.trim() || freeScanning) return;
+    setFreeScanning(true); setFreeScanError(""); setFreeScanResult(null);
+    try {
+      const res = await fetch("/api/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: freeScanUrl.trim() }) });
+      const data = await res.json();
+      if (!res.ok) { setFreeScanError(data.error); return; }
+      setFreeScanResult(data);
+    } catch { setFreeScanError("Scan failed. Check the URL and try again."); }
+    finally { setFreeScanning(false); }
   }
 
   async function handleCompare(e: React.FormEvent) {
@@ -467,10 +485,82 @@ function DashboardInner() {
           {/* Free user upgrade experience */}
           {navSection === "scan" && isFree && (
             <div>
-              <div className="mb-8">
+              <div className="mb-6">
                 <h1 className="text-lg font-bold text-white mb-1">Welcome to AgentReady</h1>
-                <p className="text-sm text-[var(--text-secondary)]">Choose a plan to unlock all features and start optimizing your store.</p>
+                <p className="text-sm text-[var(--text-secondary)]">Try a free preview scan, then upgrade to unlock full reports and fix code.</p>
               </div>
+
+              {/* Free scanner */}
+              <div className="surface rounded-xl p-5 mb-6">
+                <p className="text-sm font-semibold text-white mb-1">Quick scan preview</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-3">See your score and category grades. Upgrade for the full breakdown with fixes.</p>
+                <form onSubmit={handleFreeScan} className="flex gap-2">
+                  <input type="text" value={freeScanUrl} onChange={(e) => setFreeScanUrl(e.target.value)} placeholder="yourstore.com" disabled={freeScanning}
+                    className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" />
+                  <button type="submit" disabled={freeScanning || !freeScanUrl.trim()}
+                    className="px-5 py-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-light)] text-[var(--text)] text-sm font-medium hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
+                    {freeScanning ? "Scanning..." : "Preview"}
+                  </button>
+                </form>
+                {freeScanError && <p className="text-xs text-[var(--red)] mt-2">{freeScanError}</p>}
+              </div>
+
+              {/* Free scan teaser results */}
+              {freeScanResult && (
+                <div className="surface rounded-xl p-5 mb-6 fade-up">
+                  <div className="flex items-start gap-5 mb-5">
+                    <div className="text-center shrink-0">
+                      <div className="text-3xl font-mono font-bold" style={{ color: freeScanResult.overallScore >= 75 ? "var(--green)" : freeScanResult.overallScore >= 45 ? "var(--yellow)" : "var(--red)" }}>
+                        {freeScanResult.overallScore}
+                      </div>
+                      <div className="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1">{freeScanResult.grade}</div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-white font-medium mb-2">Your store scored {freeScanResult.overallScore}/100</p>
+                      <p className="text-xs text-[var(--text-secondary)]">
+                        {freeScanResult.overallScore < 50 ? "AI agents can barely see your store. There are critical issues to fix." :
+                         freeScanResult.overallScore < 75 ? "Agents see some of your data but miss important product details." :
+                         "Your store is in decent shape, but there is room to improve."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Category grades only */}
+                  <div className="space-y-2 mb-5">
+                    {freeScanResult.categories.map((cat, i) => {
+                      const pct = cat.maxScore > 0 ? Math.round((cat.score / cat.maxScore) * 100) : 0;
+                      const color = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--yellow)" : "var(--red)";
+                      const label = pct >= 70 ? "Good" : pct >= 40 ? "Needs work" : "Poor";
+                      return (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+                          <span className="text-xs text-[var(--text)] flex-1">{cat.name}</span>
+                          <span className="text-[11px] text-[var(--text-dim)]">{label}</span>
+                          <div className="w-16 h-1.5 bg-[rgba(255,255,255,0.04)] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Blurred details + upgrade CTA */}
+                  <div className="relative mb-4">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--bg-raised)] z-10 pointer-events-none rounded-lg" />
+                    <div className="blur-[3px] opacity-25 pointer-events-none select-none py-3 px-2">
+                      <p className="text-xs text-[var(--text)] mb-1.5">&#10003; Found 3 JSON-LD blocks with Product schema</p>
+                      <p className="text-xs text-[var(--text)] mb-1.5">&#8227; Add og:price:amount meta tags for pricing</p>
+                      <p className="text-xs text-[var(--text)] mb-1.5">&#10003; sitemap.xml is accessible</p>
+                      <p className="text-xs text-[var(--text)]">&#8227; Add structured review data for social proof</p>
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-xs text-[var(--text-secondary)] mb-3">Upgrade to see every finding, get fix code, and track your score over time.</p>
+                    <a href="/signup?plan=growth" className="inline-block px-5 py-2.5 rounded-lg bg-[var(--accent)] text-black text-sm font-semibold hover:brightness-110 transition">Unlock full report</a>
+                  </div>
+                </div>
+              )}
 
               {/* What you get */}
               <div className="surface rounded-xl p-6 mb-6">
