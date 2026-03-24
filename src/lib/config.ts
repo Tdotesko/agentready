@@ -17,6 +17,8 @@ export const config = {
     secret: process.env.JWT_SECRET!,
   },
   appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  siteUrl: "https://cartparse.com",
+  siteName: "CartParse",
 };
 
 export type Plan = "growth" | "business" | "enterprise" | "starter" | "pro" | "agency";
