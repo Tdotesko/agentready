@@ -43,6 +43,7 @@ export async function initDb() {
       plan TEXT,
       subscription_id TEXT,
       subscription_status TEXT,
+      is_admin BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
@@ -67,5 +68,11 @@ export async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_users_stripe ON users(stripe_customer_id);
     CREATE INDEX IF NOT EXISTS idx_scans_user ON scans(user_id);
+
+    -- Migration: add is_admin column if it doesn't exist
+    DO $$ BEGIN
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+    EXCEPTION WHEN duplicate_column THEN NULL;
+    END $$;
   `);
 }

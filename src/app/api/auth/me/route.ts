@@ -12,5 +12,6 @@ export async function GET() {
     email: user.email,
     plan: user.plan,
     subscriptionStatus: user.subscriptionStatus,
+    isAdmin: user.isAdmin,
   });
 }
