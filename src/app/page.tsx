@@ -457,7 +457,7 @@ export default function Home() {
                   cta="Get started" />
                 <Tier name="Business" price="$149" plan="business" desc="For serious sellers and teams" pop
                   features={["Everything in Growth", "Up to 25 stores", "Competitor comparison scans", "Score history tracking", "Daily automated monitoring", "Email alerts on score changes"]}
-                  cta="Start free trial" />
+                  cta="Get started" />
                 <Tier name="Enterprise" price="$399" plan="enterprise" desc="For agencies managing client stores"
                   features={["Everything in Business", "Unlimited stores", "White-label PDF reports", "Bulk scanning API", "Team seats and client dashboard", "Priority support"]}
                   cta="Get started" />

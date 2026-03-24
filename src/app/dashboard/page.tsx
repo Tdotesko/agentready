@@ -723,7 +723,7 @@ function DashboardInner() {
                 ))}
               </div>
 
-              <p className="text-[11px] text-[var(--text-dim)] text-center">All plans include a 7-day money-back guarantee. Cancel anytime.</p>
+              <p className="text-[11px] text-[var(--text-dim)] text-center">Cancel anytime from your dashboard.</p>
             </div>
           )}
 
