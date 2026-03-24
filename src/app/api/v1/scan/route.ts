@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Invalid API key." }, { status: 401 });
   if (!hasActiveSub(user)) return NextResponse.json({ error: "Active subscription required." }, { status: 403 });
 
-  // Only enterprise users get API access
-  if (user.plan !== "enterprise" && user.plan !== "agency") {
+  // Only enterprise users and admins get API access
+  if (!user.isAdmin && user.plan !== "enterprise" && user.plan !== "agency") {
     return NextResponse.json({ error: "API access requires an Enterprise plan." }, { status: 403 });
   }
 
