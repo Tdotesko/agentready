@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findUserByEmail, createUser } from "@/lib/users";
-import { hashPassword, setSessionCookie } from "@/lib/auth";
+import { hashPassword, createToken } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,9 +26,17 @@ export async function POST(req: NextRequest) {
 
     const hash = await hashPassword(password);
     const user = await createUser(email, hash);
-    await setSessionCookie(user.id);
+    const token = createToken(user.id);
 
-    return NextResponse.json({ id: user.id, email: user.email });
+    const response = NextResponse.json({ id: user.id, email: user.email });
+    response.cookies.set("ar_session", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
+    });
+    return response;
   } catch {
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
