@@ -79,8 +79,28 @@ export function checkShippingReturns(ctx: CheckContext): ScanCategory {
     recommendations.push("Add OfferShippingDetails schema to your product pages. AI agents need shipping costs and delivery times to recommend your products over competitors.");
   }
 
+  // Shipping policy page linked
+  const shippingLink = ctx.$('a[href*="shipping"], a[href*="delivery"]').length > 0;
+  if (shippingLink) { score += 1; checks.push(check("Shipping page linked", true, 1, 1, "Found")); }
+  else { checks.push(check("Shipping page linked", false, 0, 1, "Not linked")); }
+
+  // Returns page linked
+  const returnsLink = ctx.$('a[href*="return"], a[href*="refund"], a[href*="exchange"]').length > 0;
+  if (returnsLink) { score += 1; checks.push(check("Returns page linked", true, 1, 1, "Found")); }
+  else { checks.push(check("Returns page linked", false, 0, 1, "Not linked")); }
+
+  // Estimated delivery text
+  const hasDeliveryText = ctx.html.toLowerCase().includes("delivery") || ctx.html.toLowerCase().includes("shipping time") || ctx.html.toLowerCase().includes("arrives");
+  if (hasDeliveryText) { checks.push(check("Delivery estimate text", true, 0, 0, "Mentioned")); }
+  else { checks.push(check("Delivery estimate text", false, 0, 0, "Not found")); }
+
+  // International shipping mentioned
+  const hasIntl = ctx.html.toLowerCase().includes("international shipping") || ctx.html.toLowerCase().includes("worldwide") || ctx.html.toLowerCase().includes("ship worldwide");
+  if (hasIntl) { checks.push(check("International shipping", true, 0, 0, "Mentioned")); findings.push("International shipping mentioned"); }
+  else { checks.push(check("International shipping", false, 0, 0, "Not mentioned")); }
+
   // Free shipping indicator in HTML
-  const freeShipping = ctx.$('*:contains("free shipping"), *:contains("Free Shipping"), *:contains("FREE SHIPPING"), [class*="free-shipping"]').length > 0;
+  const freeShipping = ctx.$('[class*="free-shipping"]').length > 0 || ctx.html.toLowerCase().includes("free shipping");
   if (freeShipping) {
     score += 2;
     findings.push("Free shipping mentioned on page");

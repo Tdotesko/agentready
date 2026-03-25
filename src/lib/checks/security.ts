@@ -61,5 +61,22 @@ export function checkSecurityTrust(ctx: CheckContext): ScanCategory {
   if (ctx.headers["access-control-allow-origin"]) { score += 2; checks.push(check("CORS configured", true, 2, 2, ctx.headers["access-control-allow-origin"])); }
   else { checks.push(check("CORS configured", false, 0, 2, "Not set")); }
 
+  // 13. Referrer-Policy
+  if (ctx.headers["referrer-policy"]) { checks.push(check("Referrer-Policy", true, 0, 0, ctx.headers["referrer-policy"])); }
+  else { checks.push(check("Referrer-Policy", false, 0, 0, "Not set")); }
+
+  // 14. Permissions-Policy
+  if (ctx.headers["permissions-policy"]) { checks.push(check("Permissions-Policy", true, 0, 0, "Set")); }
+  else { checks.push(check("Permissions-Policy", false, 0, 0, "Not set")); }
+
+  // 15. Server header exposure
+  const server = ctx.headers["server"] || "";
+  if (!server || server === "cloudflare") { checks.push(check("Server header", true, 0, 0, server || "Hidden")); }
+  else { checks.push(check("Server header", false, 0, 0, `Exposed: ${server}`)); }
+
+  // 16. X-Powered-By hidden
+  if (!ctx.headers["x-powered-by"]) { checks.push(check("X-Powered-By hidden", true, 0, 0, "Hidden")); }
+  else { checks.push(check("X-Powered-By hidden", false, 0, 0, `Exposed: ${ctx.headers["x-powered-by"]}`)); }
+
   return { name: "Security & Trust", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

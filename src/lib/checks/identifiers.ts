@@ -82,5 +82,25 @@ export function checkIdentifiersTaxonomy(ctx: CheckContext): ScanCategory {
   if (hasIsbn) { score += 1; checks.push(check("ISBN (if applicable)", true, 1, 1, String(p.isbn))); }
   else { checks.push(check("ISBN (if applicable)", false, 0, 1, "N/A")); }
 
+  // 8. Product condition
+  const hasCondition = !!(p.itemCondition);
+  if (hasCondition) { checks.push(check("Item condition", true, 0, 0, String(p.itemCondition).split("/").pop() || "Set")); }
+  else { checks.push(check("Item condition", false, 0, 0, "Not set")); }
+
+  // 9. Material/color/size
+  const hasMaterial = !!(p.material || p.color || p.size);
+  if (hasMaterial) { checks.push(check("Product attributes", true, 0, 0, "Material/color/size")); }
+  else { checks.push(check("Product attributes", false, 0, 0, "Missing")); }
+
+  // 10. Weight
+  const hasWeight = !!(p.weight);
+  if (hasWeight) { checks.push(check("Product weight", true, 0, 0, "Set")); }
+  else { checks.push(check("Product weight", false, 0, 0, "Not set")); }
+
+  // 11. Country of origin
+  const hasOrigin = !!(p.countryOfOrigin);
+  if (hasOrigin) { checks.push(check("Country of origin", true, 0, 0, "Set")); }
+  else { checks.push(check("Country of origin", false, 0, 0, "Not set")); }
+
   return { name: "Identifiers & Taxonomy", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

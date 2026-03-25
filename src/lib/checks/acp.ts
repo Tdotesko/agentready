@@ -54,5 +54,25 @@ export function checkACPProtocol(ctx: CheckContext): ScanCategory {
   if (hasStorefrontApi) { score += 2; findings.push("Storefront API references found"); checks.push(check("Storefront API", true, 2, 2, "Detected")); }
   else { checks.push(check("Storefront API", false, 0, 2, "Not detected")); }
 
+  // 10. Coupon/discount code input
+  const hasCoupon = ctx.$('[class*="coupon"], [class*="discount"], [class*="promo-code"], input[name*="coupon"], input[name*="discount"]').length > 0;
+  if (hasCoupon) { checks.push(check("Discount code", true, 0, 0, "Input found")); }
+  else { checks.push(check("Discount code", false, 0, 0, "Not found")); }
+
+  // 11. Wishlist API
+  const hasWishlistApi = ctx.html.includes("wishlist") || ctx.$('[data-wishlist]').length > 0;
+  if (hasWishlistApi) { checks.push(check("Wishlist API", true, 0, 0, "Detected")); }
+  else { checks.push(check("Wishlist API", false, 0, 0, "Not detected")); }
+
+  // 12. Gift card/wrap
+  const hasGift = ctx.$('[class*="gift"], [class*="wrap"], input[name*="gift"]').length > 0;
+  if (hasGift) { checks.push(check("Gift options", true, 0, 0, "Detected")); }
+  else { checks.push(check("Gift options", false, 0, 0, "Not found")); }
+
+  // 13. Multi-currency
+  const hasCurrency = ctx.$('[class*="currency"], [data-currency], select[name*="currency"]').length > 0;
+  if (hasCurrency) { checks.push(check("Multi-currency", true, 0, 0, "Detected")); findings.push("Multi-currency support"); }
+  else { checks.push(check("Multi-currency", false, 0, 0, "Not detected")); }
+
   return { name: "ACP Protocol", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

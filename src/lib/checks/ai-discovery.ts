@@ -158,5 +158,29 @@ export async function checkAIDiscoverability(ctx: CheckContext): Promise<ScanCat
     recommendations.push("Anti-bot protection (CAPTCHA, Cloudflare challenge) detected. This may block AI shopping agents from accessing your store.");
   }
 
+  // 11. Robots meta allows indexing
+  const robotsMeta = ctx.$('meta[name="robots"]').attr("content") || "";
+  if (!robotsMeta.includes("noindex") && !robotsMeta.includes("nofollow")) { checks.push(check("Meta robots allows indexing", true, 0, 0, robotsMeta || "Default allow")); }
+  else { checks.push(check("Meta robots allows indexing", false, 0, 0, robotsMeta)); }
+
+  // 12. Structured data not in noscript
+  const sdInNoscript = ctx.$('noscript script[type="application/ld+json"]').length;
+  if (sdInNoscript === 0) { checks.push(check("Schema not in noscript", true, 0, 0, "Clean")); }
+  else { checks.push(check("Schema not in noscript", false, 0, 0, `${sdInNoscript} in noscript`)); }
+
+  // 13. No nofollow on product links
+  const nofollowLinks = ctx.$('a[rel*="nofollow"]').length;
+  const totalLinks = ctx.$("a[href]").length;
+  if (nofollowLinks < totalLinks * 0.3) { checks.push(check("Links followable", true, 0, 0, `${nofollowLinks} nofollow of ${totalLinks}`)); }
+  else { checks.push(check("Links followable", false, 0, 0, `${nofollowLinks}/${totalLinks} nofollow`)); }
+
+  // 14. Page has meaningful content
+  const bodyText = ctx.$("body").text().replace(/\s+/g, " ").trim();
+  if (bodyText.length > 500) { checks.push(check("Meaningful content", true, 0, 0, `${bodyText.length} chars`)); }
+  else { checks.push(check("Meaningful content", false, 0, 0, `${bodyText.length} chars (thin)`)); }
+
+  // 15. No redirect loops
+  checks.push(check("Direct access", true, 0, 0, "Page loaded successfully"));
+
   return { name: "AI Discoverability", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
