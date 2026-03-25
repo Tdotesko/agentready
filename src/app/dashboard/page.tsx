@@ -479,7 +479,7 @@ function DashboardInner() {
                   <svg className="w-8 h-8 text-[var(--accent)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                 </div>
                 <h1 className="text-xl font-bold text-white mb-2">Let&apos;s scan your store</h1>
-                <p className="text-sm text-[var(--text-secondary)]">Enter your store URL below and we&apos;ll run a deep scan across up to 12 pages, detect your platform, and generate fix code.</p>
+                <p className="text-sm text-[var(--text-secondary)]">Enter your store URL below and we&apos;ll run a deep scan across up to 50+ pages, detect your platform, and generate fix code.</p>
               </div>
 
               <form onSubmit={handleScan} className="surface rounded-xl p-6">
@@ -492,7 +492,7 @@ function DashboardInner() {
                 </div>
                 {scanError && <p className="text-xs text-[var(--red)] mt-2">{scanError}</p>}
                 <div className="mt-4 flex items-center gap-4 text-[10px] text-[var(--text-dim)]">
-                  <span>Up to 12 pages</span>
+                  <span>50+ pages scanned</span>
                   <span>Platform detection</span>
                   <span>Fix code included</span>
                 </div>
@@ -503,13 +503,22 @@ function DashboardInner() {
           {/* ═══ SCAN SECTION (has existing scans) ═══ */}
           {navSection === "scan" && !viewResult && isActive && (scans.length > 0 || scanning) && (
             <>
-              {/* Welcome + Stats */}
-              <div className="mb-8">
-                <h1 className="text-lg font-bold text-white mb-1">Welcome back</h1>
-                <p className="text-sm text-[var(--text-secondary)]">Run a deep scan to check your store&apos;s AI agent readiness.</p>
+              {/* Scanner input - ALWAYS AT TOP */}
+              <div className="surface rounded-2xl p-6 mb-6">
+                <p className="text-base font-semibold text-white mb-1">Scan a store</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-4">Enter any store URL. We&apos;ll crawl up to 50+ pages, run 195 checks, detect the platform, and tell you exactly what to fix.</p>
+                <form onSubmit={handleScan} className="flex gap-3">
+                  <input type="text" value={scanUrl} onChange={(e) => setScanUrl(e.target.value)} placeholder="Enter store URL (e.g. mystore.com)" disabled={scanning}
+                    className="flex-1 rounded-xl bg-[var(--bg)] border border-[var(--border-light)] px-5 py-3.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)] focus:shadow-[0_0_0_3px_var(--accent-soft)]" />
+                  <button type="submit" disabled={scanning || !scanUrl.trim()}
+                    className="px-8 py-3.5 rounded-xl btn-primary text-sm disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
+                    {scanning ? "Scanning..." : "Scan"}
+                  </button>
+                </form>
+                {scanError && <p className="text-sm text-[var(--red)] mt-3 bg-[var(--red-soft)] rounded-lg px-4 py-2">{scanError}</p>}
               </div>
 
-              {/* Stat cards */}
+              {/* Stats below scanner */}
               {scans.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                   <StatCard label="Latest Score" value={String(latestScan?.score || 0)}
@@ -549,20 +558,7 @@ function DashboardInner() {
                 </div>
               )}
 
-              {/* Scanner input */}
-              <div className="surface rounded-xl p-5">
-                <p className="text-sm font-semibold text-white mb-1">Run a deep scan</p>
-                <p className="text-xs text-[var(--text-secondary)] mb-3">Crawls up to 12 pages, detects your platform, and generates copy-paste fix code.</p>
-                <form onSubmit={handleScan} className="flex gap-2">
-                  <input type="text" value={scanUrl} onChange={(e) => setScanUrl(e.target.value)} placeholder="yourstore.com" disabled={scanning}
-                    className="flex-1 rounded-lg bg-[var(--bg)] border border-[var(--border-light)] px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-border)]" />
-                  <button type="submit" disabled={scanning || !scanUrl.trim()}
-                    className="px-5 py-2.5 rounded-lg btn-primary text-sm disabled:opacity-30 transition cursor-pointer disabled:cursor-not-allowed shrink-0">
-                    {scanning ? "Scanning..." : "Scan"}
-                  </button>
-                </form>
-                {scanError && <p className="text-xs text-[var(--red)] mt-2">{scanError}</p>}
-              </div>
+              {/* Scanner moved to top of section */}
             </>
           )}
 
@@ -748,7 +744,7 @@ function DashboardInner() {
                 <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-5">What you get with a paid plan</p>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {[
-                    { title: "Multi-page deep scan", desc: "We crawl up to 12 pages on your store, not just the homepage.", locked: false },
+                    { title: "Multi-page deep scan", desc: "We crawl up to 50+ pages on your store, not just the homepage.", locked: false },
                     { title: "Platform-specific fix code", desc: "Copy-paste code for Shopify, WooCommerce, and more.", locked: false },
                     { title: "Priority action plan", desc: "Every issue ranked by impact with estimated point gains.", locked: false },
                     { title: "Exportable reports", desc: "Download HTML reports to share with your dev team.", locked: false },
