@@ -458,7 +458,7 @@ export default function Home() {
                   features={["Deep scan up to 150 pages", "Up to 25 stores", "10 competitor comparisons/mo", "Daily auto-rescans", "Webhook notifications", "Score change email alerts"]}
                   cta="Get started" />
                 <Tier name="Enterprise" price="$399" plan="enterprise" desc="For agencies managing client stores"
-                  features={["Deep scan up to 500 pages", "Unlimited stores", "Unlimited comparisons", "REST API with API keys", "White-label reports", "Hourly monitoring + webhooks"]}
+                  features={["Unlimited pages per scan", "Unlimited stores", "Unlimited comparisons", "REST API with API keys", "White-label reports", "Hourly monitoring + webhooks"]}
                   cta="Get started" />
               </div>
             </section>

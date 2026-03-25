@@ -62,10 +62,10 @@ export const planLimits: Record<string, PlanConfig> = {
   },
   enterprise: {
     name: "Enterprise",
-    pages: 500,
-    stores: 9999,
+    pages: 99999,
+    stores: 99999,
     compare: true,
-    comparesPerMonth: 9999,
+    comparesPerMonth: 99999,
     rescanInterval: "hourly",
     api: true,
     webhooks: true,
