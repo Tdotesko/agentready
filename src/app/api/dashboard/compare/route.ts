@@ -28,20 +28,64 @@ export async function POST(req: NextRequest) {
       deepScan(competitorUrl),
     ]);
 
+    // Build category-by-category comparison with specific action items
     const gaps = myResult.aggregatedCategories.map((myCat, i) => {
       const theirCat = competitorResult.aggregatedCategories[i];
       if (!theirCat) return null;
       const myPct = myCat.maxScore > 0 ? Math.round((myCat.score / myCat.maxScore) * 100) : 0;
       const theirPct = theirCat.maxScore > 0 ? Math.round((theirCat.score / theirCat.maxScore) * 100) : 0;
+
+      // Things they have that you don't
+      const theyHave = theirCat.findings.filter((f) => !myCat.findings.includes(f));
+
+      // Your recommendations that would close the gap
+      const youNeed = myCat.recommendations;
+
       return {
         category: myCat.name,
         you: myPct,
         competitor: theirPct,
         gap: theirPct - myPct,
-        theyHave: theirCat.findings.filter((f) => !myCat.findings.includes(f)),
-        youNeed: myCat.recommendations,
+        theyHave,
+        youNeed,
       };
     }).filter(Boolean);
+
+    // Generate a plain-English "how to beat them" plan
+    const behindCategories = gaps.filter(g => g && g.gap > 0).sort((a, b) => (b?.gap || 0) - (a?.gap || 0));
+    const aheadCategories = gaps.filter(g => g && g.gap < 0);
+
+    const beatThemPlan: { priority: number; action: string; category: string; impact: string; difficulty: string }[] = [];
+    let priority = 1;
+
+    for (const gap of behindCategories) {
+      if (!gap) continue;
+
+      // For each category where they're ahead, pick the top recommendations
+      for (const rec of gap.youNeed.slice(0, 2)) {
+        const impact = gap.gap >= 20 ? "high" : gap.gap >= 10 ? "medium" : "low";
+        const difficulty = rec.toLowerCase().includes("add") ? "easy" : rec.toLowerCase().includes("schema") ? "medium" : "easy";
+
+        beatThemPlan.push({
+          priority: priority++,
+          action: rec,
+          category: gap.category,
+          impact,
+          difficulty,
+        });
+      }
+    }
+
+    // Summary in plain English
+    const scoreDiff = competitorResult.overallScore - myResult.overallScore;
+    let summary = "";
+    if (scoreDiff > 0) {
+      summary = `They're ${scoreDiff} points ahead of you. The biggest gaps are in ${behindCategories.slice(0, 3).map(g => g?.category).join(", ")}. Fix the top ${Math.min(5, beatThemPlan.length)} items below and you'll close most of that gap.`;
+    } else if (scoreDiff < 0) {
+      summary = `You're ${Math.abs(scoreDiff)} points ahead! You're winning in ${aheadCategories.slice(0, 3).map(g => g?.category).join(", ")}. Keep it up, but there's still room to improve in ${behindCategories.slice(0, 2).map(g => g?.category).join(" and ") || "a few areas"}.`;
+    } else {
+      summary = `You're tied. Focus on the areas below where they score higher to pull ahead.`;
+    }
 
     return NextResponse.json({
       you: {
@@ -59,7 +103,9 @@ export async function POST(req: NextRequest) {
         pages: competitorResult.totalPages,
       },
       gaps,
-      scoreDiff: competitorResult.overallScore - myResult.overallScore,
+      scoreDiff,
+      summary,
+      beatThemPlan: beatThemPlan.slice(0, 10),
       myFull: myResult,
       competitorFull: competitorResult,
     });

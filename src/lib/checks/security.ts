@@ -78,5 +78,5 @@ export function checkSecurityTrust(ctx: CheckContext): ScanCategory {
   if (!ctx.headers["x-powered-by"]) { checks.push(check("X-Powered-By hidden", true, 0, 0, "Hidden")); }
   else { checks.push(check("X-Powered-By hidden", false, 0, 0, `Exposed: ${ctx.headers["x-powered-by"]}`)); }
 
-  return { name: "Security & Trust", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Trust & Security", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

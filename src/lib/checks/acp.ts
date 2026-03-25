@@ -74,5 +74,5 @@ export function checkACPProtocol(ctx: CheckContext): ScanCategory {
   if (hasCurrency) { checks.push(check("Multi-currency", true, 0, 0, "Detected")); findings.push("Multi-currency support"); }
   else { checks.push(check("Multi-currency", false, 0, 0, "Not detected")); }
 
-  return { name: "ACP Protocol", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Checkout & Payments", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

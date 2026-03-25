@@ -395,7 +395,7 @@ function checkStructuredData(html: string, $: cheerio.CheerioAPI): ScanCategory 
     findings.push(issue);
   }
 
-  return { name: "Structured Data", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Product Info for AI", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
 
 /* ─── Category: Product Data Quality (25pts) ─── */
@@ -561,7 +561,7 @@ function checkProductData($: cheerio.CheerioAPI, url: string): ScanCategory {
   if (h1Texts.size === $("h1").length && h1Texts.size > 0) { score += 1; checks.push({ name: "Unique H1 content", passed: true, score: 1, maxScore: 1, detail: "All unique" }); }
   else { checks.push({ name: "Unique H1 content", passed: false, score: 0, maxScore: 1, detail: h1Texts.size === 0 ? "No H1" : "Duplicates" }); }
 
-  return { name: "Product Data Quality", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Page Content Quality", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
 
 /* ─── Category: Machine Accessibility (20pts) ─── */
@@ -707,7 +707,7 @@ function checkMachineAccessibility($: cheerio.CheerioAPI, headers: Record<string
   if (preconnect > 0) { score += 1; checks.push({ name: "Preconnect hints", passed: true, score: 1, maxScore: 1, detail: `${preconnect} hints` }); }
   else { checks.push({ name: "Preconnect hints", passed: false, score: 0, maxScore: 1, detail: "None" }); }
 
-  return { name: "Machine Accessibility", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Crawlability", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
 
 /* ─── Category: Agent Commerce Readiness (15pts) ─── */
@@ -826,7 +826,7 @@ function checkAgentCommerce($: cheerio.CheerioAPI): ScanCategory {
   if (hasSpecs) { score += 1; checks.push({ name: "Product details", passed: true, score: 1, maxScore: 1, detail: "Section found" }); }
   else { checks.push({ name: "Product details", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
 
-  return { name: "Agent Commerce Readiness", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Shopping Experience", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
 
 /* ─── Category: Performance & Parsability (15pts) ─── */
@@ -958,7 +958,7 @@ function checkPerformance(html: string, $: cheerio.CheerioAPI, responseTimeMs: n
   if (!hasDocWrite) { score += 1; checks.push({ name: "No document.write", passed: true, score: 1, maxScore: 1, detail: "Clean" }); }
   else { checks.push({ name: "No document.write", passed: false, score: 0, maxScore: 1, detail: "Found (blocks rendering)" }); }
 
-  return { name: "Performance & Parsability", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Speed & Performance", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
 
 /* ─── Estimate fix time ─── */

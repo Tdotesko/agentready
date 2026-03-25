@@ -182,5 +182,5 @@ export async function checkAIDiscoverability(ctx: CheckContext): Promise<ScanCat
   // 15. No redirect loops
   checks.push(check("Direct access", true, 0, 0, "Page loaded successfully"));
 
-  return { name: "AI Discoverability", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "AI Visibility", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

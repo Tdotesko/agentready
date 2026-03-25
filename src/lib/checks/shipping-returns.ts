@@ -124,5 +124,5 @@ export function checkShippingReturns(ctx: CheckContext): ScanCategory {
   if (hasPriceMatch) { checks.push(check("Price match policy", true, 0, 0, "Mentioned")); }
   else { checks.push(check("Price match policy", false, 0, 0, "Not mentioned")); }
 
-  return { name: "Return & Shipping", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Shipping & Returns", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

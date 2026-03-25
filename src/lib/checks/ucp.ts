@@ -154,5 +154,5 @@ export async function checkUCPProtocol(ctx: CheckContext): Promise<ScanCategory>
   if (acceptsJson) { checks.push(check("JSON capability", true, 0, 0, "Detected")); }
   else { checks.push(check("JSON capability", false, 0, 0, "Not detected")); }
 
-  return { name: "UCP Protocol", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Google Shopping Ready", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

@@ -41,7 +41,7 @@ export function checkIdentifiersTaxonomy(ctx: CheckContext): ScanCategory {
     checks.push(check("Breadcrumb depth", false, 0, 2, "No breadcrumbs"));
     checks.push(check("ISBN (if applicable)", false, 0, 1, "N/A"));
     recommendations.push("Add Product structured data with identifiers (GTIN, SKU, brand) to help AI agents uniquely identify your products in global catalogs.");
-    return { name: "Identifiers & Taxonomy", score: 0, maxScore, status: "fail", findings, recommendations, checks };
+    return { name: "Product Identification", score: 0, maxScore, status: "fail", findings, recommendations, checks };
   }
 
   const p = products[0];
@@ -102,5 +102,5 @@ export function checkIdentifiersTaxonomy(ctx: CheckContext): ScanCategory {
   if (hasOrigin) { checks.push(check("Country of origin", true, 0, 0, "Set")); }
   else { checks.push(check("Country of origin", false, 0, 0, "Not set")); }
 
-  return { name: "Identifiers & Taxonomy", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "Product Identification", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

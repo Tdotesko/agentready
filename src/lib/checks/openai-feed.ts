@@ -35,7 +35,7 @@ export function checkOpenAIFeedReadiness(ctx: CheckContext): ScanCategory {
     recommendations.push("Add Product structured data (JSON-LD) to your pages. This is the primary way ChatGPT Shopping and other AI agents read your product information.");
     // All other checks will fail
     for (let i = 0; i < 13; i++) checks.push(check("N/A", false, 0, i < 4 ? 2 : 1, "No product data"));
-    return { name: "OpenAI Feed Ready", score: 0, maxScore, status: "fail", findings, recommendations, checks };
+    return { name: "ChatGPT Shopping Ready", score: 0, maxScore, status: "fail", findings, recommendations, checks };
   }
 
   const p = products[0];
@@ -139,5 +139,5 @@ export function checkOpenAIFeedReadiness(ctx: CheckContext): ScanCategory {
   else if (productUrl || canonical) { checks.push(check("URL matches canonical", false, 0, 0, "Mismatch or missing")); }
   else { checks.push(check("URL matches canonical", false, 0, 0, "Both missing")); }
 
-  return { name: "OpenAI Feed Ready", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
+  return { name: "ChatGPT Shopping Ready", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

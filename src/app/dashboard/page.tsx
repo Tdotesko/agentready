@@ -923,7 +923,7 @@ function DashboardInner() {
                         {(compResult.you as { score: number }).score}
                       </p>
                       <p className="text-xs text-[var(--text-dim)] mt-2 truncate">{(compResult.you as { url: string }).url}</p>
-                      <span className="text-[10px] text-[var(--accent)]">{PLATFORM_LABELS[(compResult.you as { platform: string }).platform]}</span>
+                      <span className="text-[10px] text-[var(--accent)]">{String(PLATFORM_LABELS[String((compResult.you as Record<string, unknown>).platform)] ?? "")}</span>
                     </div>
                     <div className="surface rounded-xl p-6 text-center">
                       <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider mb-2">Competitor</p>
@@ -931,25 +931,31 @@ function DashboardInner() {
                         {(compResult.competitor as { score: number }).score}
                       </p>
                       <p className="text-xs text-[var(--text-dim)] mt-2 truncate">{(compResult.competitor as { url: string }).url}</p>
-                      <span className="text-[10px] text-[var(--accent)]">{PLATFORM_LABELS[(compResult.competitor as { platform: string }).platform]}</span>
+                      <span className="text-[10px] text-[var(--accent)]">{String(PLATFORM_LABELS[String((compResult.competitor as Record<string, unknown>).platform)] ?? "")}</span>
                     </div>
                   </div>
 
-                  {/* Diff badge */}
                   <div className="text-center">
-                    {(compResult.scoreDiff as number) > 0 ? (
-                      <span className="text-sm px-3 py-1 rounded-full bg-[var(--red-soft)] text-[var(--red)]">They lead by {compResult.scoreDiff as number} points</span>
-                    ) : (compResult.scoreDiff as number) < 0 ? (
-                      <span className="text-sm px-3 py-1 rounded-full bg-[var(--green-soft)] text-[var(--green)]">You lead by {Math.abs(compResult.scoreDiff as number)} points</span>
+                    {Number(compResult.scoreDiff) > 0 ? (
+                      <span className="text-sm px-3 py-1 rounded-full bg-[var(--red-soft)] text-[var(--red)]">They lead by {Number(compResult.scoreDiff)} points</span>
+                    ) : Number(compResult.scoreDiff) < 0 ? (
+                      <span className="text-sm px-3 py-1 rounded-full bg-[var(--green-soft)] text-[var(--green)]">You lead by {Math.abs(Number(compResult.scoreDiff))} points</span>
                     ) : (
                       <span className="text-sm px-3 py-1 rounded-full bg-[rgba(255,255,255,0.05)] text-[var(--text-secondary)]">Tied</span>
                     )}
                   </div>
 
+                  {/* Plain English summary */}
+                  {typeof compResult.summary === "string" && (
+                    <div className="surface rounded-xl p-4 text-sm text-[var(--text)] leading-relaxed">
+                      {String(compResult.summary)}
+                    </div>
+                  )}
+
                   {/* Category gaps */}
                   <div className="surface rounded-xl overflow-hidden">
                     <div className="px-5 py-3 border-b border-[var(--border)]">
-                      <p className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest">Category Comparison</p>
+                      <p className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest">Category by category</p>
                     </div>
                     {(compResult.gaps as Array<{ category: string; you: number; competitor: number; gap: number }>)?.map((gap, i) => (
                       <div key={i} className="px-5 py-3 flex items-center gap-4 border-b border-[var(--border)] last:border-0">
@@ -970,6 +976,32 @@ function DashboardInner() {
                       </div>
                     ))}
                   </div>
+
+                  {/* How to beat them - action plan */}
+                  {(compResult.beatThemPlan as Array<{ priority: number; action: string; category: string; impact: string; difficulty: string }>)?.length > 0 && (
+                    <div className="surface rounded-xl overflow-hidden">
+                      <div className="px-5 py-3 border-b border-[var(--border)]">
+                        <p className="text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest">
+                          {(compResult.scoreDiff as number) > 0 ? "How to beat them" : "How to stay ahead"}
+                        </p>
+                      </div>
+                      <div className="divide-y divide-[var(--border)]">
+                        {(compResult.beatThemPlan as Array<{ priority: number; action: string; category: string; impact: string; difficulty: string }>).map((item, i) => (
+                          <div key={i} className="px-5 py-3 flex items-start gap-3">
+                            <span className="text-xs font-mono text-[var(--text-dim)] w-5 pt-0.5 shrink-0">{item.priority}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${item.impact === "high" ? "bg-[var(--red-soft)] text-[var(--red)]" : item.impact === "medium" ? "bg-[var(--yellow-soft)] text-[var(--yellow)]" : "bg-[rgba(255,255,255,0.04)] text-[var(--text-dim)]"}`}>{item.impact}</span>
+                                <span className="text-[9px] text-[var(--text-dim)]">{item.category}</span>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.04)] text-[var(--text-dim)]">{item.difficulty}</span>
+                              </div>
+                              <p className="text-xs text-[var(--text)] leading-relaxed">{item.action}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
