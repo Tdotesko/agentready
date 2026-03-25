@@ -139,5 +139,20 @@ export async function checkUCPProtocol(ctx: CheckContext): Promise<ScanCategory>
     checks.push(check("MCP support", false, 0, 2, "Not detected"));
   }
 
+  // 11. A2A (Agent-to-Agent) protocol hints
+  const hasA2A = ctx.html.includes("a2a") || ctx.html.includes("agent-to-agent") || ctx.html.includes("agentcard");
+  if (hasA2A) { checks.push(check("A2A protocol", true, 0, 0, "Reference found")); }
+  else { checks.push(check("A2A protocol", false, 0, 0, "Not detected")); }
+
+  // 12. Webhook support advertised
+  const hasWebhook = ctx.html.includes("webhook") || ctx.html.includes("callback_url");
+  if (hasWebhook) { checks.push(check("Webhook support", true, 0, 0, "Advertised")); }
+  else { checks.push(check("Webhook support", false, 0, 0, "Not advertised")); }
+
+  // 13. JSON response capability
+  const acceptsJson = ctx.headers["content-type"]?.includes("json") || ctx.$('link[type="application/json"]').length > 0;
+  if (acceptsJson) { checks.push(check("JSON capability", true, 0, 0, "Detected")); }
+  else { checks.push(check("JSON capability", false, 0, 0, "Not detected")); }
+
   return { name: "UCP Protocol", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

@@ -99,7 +99,17 @@ export function checkOpenAIFeedReadiness(ctx: CheckContext): ScanCategory {
   if (hasSeller) { score += 1; checks.push(check("Seller info", true, 1, 1, "Present")); }
   else { checks.push(check("Seller info", false, 0, 1, "Missing")); recommendations.push("Add seller or brand information so AI agents can attribute products correctly."); }
 
-  // 14. Data freshness (check if page has last-modified or similar)
+  // 14. Multiple variants
+  const hasVariants = products.some(pr => Array.isArray(pr.hasVariant) || pr["@type"] === "ProductGroup");
+  if (hasVariants) { score += 1; checks.push(check("Variants", true, 1, 1, "ProductGroup/hasVariant")); findings.push("Product variants in schema"); }
+  else { checks.push(check("Variants", false, 0, 1, "No variants")); }
+
+  // 15. Offers array
+  const offersArray = Array.isArray(p.offers);
+  if (offersArray && (p.offers as unknown[]).length > 1) { checks.push(check("Multiple offers", true, 0, 0, `${(p.offers as unknown[]).length} offers`)); }
+  else { checks.push(check("Multiple offers", false, 0, 0, "Single or no offers")); }
+
+  // 16. Data freshness (check if page has last-modified or similar)
   const lastMod = ctx.headers["last-modified"];
   if (lastMod) {
     const age = Date.now() - new Date(lastMod).getTime();
