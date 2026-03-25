@@ -140,18 +140,30 @@ interface SchemaValidation {
   hasProduct: boolean;
   hasOrganization: boolean;
   hasBreadcrumb: boolean;
+  hasProductGroup: boolean;
+  hasFAQ: boolean;
+  hasVideo: boolean;
+  hasReview: boolean;
+  hasLocalBusiness: boolean;
+  hasWebPage: boolean;
+  hasSearchAction: boolean;
+  correctContext: boolean;
   productFields: {
     name: boolean; description: boolean; image: boolean;
     price: boolean; currency: boolean; availability: boolean;
     sku: boolean; brand: boolean; rating: boolean;
   };
-  productFieldScore: number; // 0-10
+  productFieldScore: number;
+  totalTypes: number;
   issues: string[];
 }
 
 function validateStructuredData(jsonLdBlocks: string[]): SchemaValidation {
   const result: SchemaValidation = {
     hasProduct: false, hasOrganization: false, hasBreadcrumb: false,
+    hasProductGroup: false, hasFAQ: false, hasVideo: false, hasReview: false,
+    hasLocalBusiness: false, hasWebPage: false, hasSearchAction: false,
+    correctContext: false, totalTypes: 0,
     productFields: { name: false, description: false, image: false, price: false, currency: false, availability: false, sku: false, brand: false, rating: false },
     productFieldScore: 0, issues: [],
   };
@@ -193,6 +205,14 @@ function validateStructuredData(jsonLdBlocks: string[]): SchemaValidation {
           }
           if (t === "Organization" || t === "WebSite" || t === "Store") result.hasOrganization = true;
           if (t === "BreadcrumbList") result.hasBreadcrumb = true;
+          if (t === "ProductGroup") result.hasProductGroup = true;
+          if (t === "FAQPage") result.hasFAQ = true;
+          if (t === "VideoObject") result.hasVideo = true;
+          if (t === "Review") result.hasReview = true;
+          if (t === "LocalBusiness") result.hasLocalBusiness = true;
+          if (t === "WebPage" || t === "ItemPage" || t === "CollectionPage") result.hasWebPage = true;
+          if (t === "SearchAction") result.hasSearchAction = true;
+          result.totalTypes++;
         }
 
         if (Array.isArray(obj["@graph"])) {
@@ -203,7 +223,12 @@ function validateStructuredData(jsonLdBlocks: string[]): SchemaValidation {
       }
 
       for (const item of items) {
-        if (item && typeof item === "object") walk(item as Record<string, unknown>);
+        if (item && typeof item === "object") {
+          const ctx = (item as Record<string, unknown>)["@context"];
+          if (ctx === "https://schema.org" || ctx === "https://schema.org/") result.correctContext = true;
+          if (ctx === "http://schema.org" || ctx === "http://schema.org/") result.issues.push("JSON-LD uses http://schema.org instead of https://schema.org");
+          walk(item as Record<string, unknown>);
+        }
       }
     } catch {
       result.issues.push("Malformed JSON-LD block found");
@@ -316,6 +341,54 @@ function checkStructuredData(html: string, $: cheerio.CheerioAPI): ScanCategory 
     const missing = [!hasOgTitle && "og:title", !hasOgDesc && "og:description", !hasOgImage && "og:image"].filter(Boolean).join(", ");
     recommendations.push(`Add missing Open Graph tags (${missing}). These help AI agents preview and share your products.`);
   }
+
+  // NEW: ProductGroup/variants (1pt)
+  if (validation.hasProductGroup) { score += 1; findings.push("ProductGroup schema (variants)"); checks.push({ name: "ProductGroup variants", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "ProductGroup variants", passed: false, score: 0, maxScore: 1, detail: "Missing" }); }
+
+  // NEW: FAQPage schema (1pt)
+  if (validation.hasFAQ) { score += 1; findings.push("FAQPage schema detected"); checks.push({ name: "FAQ schema", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "FAQ schema", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: VideoObject (1pt)
+  if (validation.hasVideo) { score += 1; findings.push("VideoObject schema detected"); checks.push({ name: "Video schema", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Video schema", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Context validation (1pt)
+  if (validation.correctContext) { score += 1; checks.push({ name: "Schema context", passed: true, score: 1, maxScore: 1, detail: "https://schema.org" }); }
+  else if (jsonLdBlocks.length > 0) { checks.push({ name: "Schema context", passed: false, score: 0, maxScore: 1, detail: "Wrong or missing @context" }); recommendations.push("Use @context: 'https://schema.org' (HTTPS, not HTTP) in all JSON-LD blocks."); }
+  else { checks.push({ name: "Schema context", passed: false, score: 0, maxScore: 1, detail: "No JSON-LD" }); }
+
+  // NEW: WebPage/ItemPage (1pt)
+  if (validation.hasWebPage) { score += 1; checks.push({ name: "WebPage schema", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "WebPage schema", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: LocalBusiness (1pt)
+  if (validation.hasLocalBusiness) { score += 1; checks.push({ name: "LocalBusiness schema", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "LocalBusiness schema", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Review schema separate from rating (1pt)
+  if (validation.hasReview) { score += 1; checks.push({ name: "Review schema", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Review schema", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Total schema type richness (1pt)
+  if (validation.totalTypes >= 5) { score += 1; checks.push({ name: "Schema richness", passed: true, score: 1, maxScore: 1, detail: `${validation.totalTypes} types` }); }
+  else { checks.push({ name: "Schema richness", passed: false, score: 0, maxScore: 1, detail: `${validation.totalTypes} types (aim for 5+)` }); }
+
+  // NEW: Twitter Card meta tags (1pt)
+  const twitterCard = $('meta[name="twitter:card"]').length > 0;
+  if (twitterCard) { score += 1; checks.push({ name: "Twitter Card", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Twitter Card", passed: false, score: 0, maxScore: 1, detail: "Missing" }); }
+
+  // NEW: og:type set correctly (1pt)
+  const ogType = $('meta[property="og:type"]').attr("content");
+  if (ogType) { score += 1; checks.push({ name: "og:type", passed: true, score: 1, maxScore: 1, detail: ogType }); }
+  else { checks.push({ name: "og:type", passed: false, score: 0, maxScore: 1, detail: "Missing" }); }
+
+  // NEW: og:site_name (1pt)
+  const ogSiteName = $('meta[property="og:site_name"]').attr("content");
+  if (ogSiteName) { score += 1; checks.push({ name: "og:site_name", passed: true, score: 1, maxScore: 1, detail: ogSiteName }); }
+  else { checks.push({ name: "og:site_name", passed: false, score: 0, maxScore: 1, detail: "Missing" }); }
 
   // Malformed blocks
   for (const issue of validation.issues.filter(i => i.includes("Malformed"))) {
@@ -438,6 +511,56 @@ function checkProductData($: cheerio.CheerioAPI, url: string): ScanCategory {
     recommendations.push("Add a title tag to this page. Every page needs a unique, descriptive title.");
   }
 
+  // NEW: Multiple product images (1pt)
+  const productImages = $('img[class*="product"], img[class*="gallery"], [class*="product-image"] img').length;
+  if (productImages >= 3) { score += 1; checks.push({ name: "Multiple product images", passed: true, score: 1, maxScore: 1, detail: `${productImages} images` }); }
+  else { checks.push({ name: "Multiple product images", passed: false, score: 0, maxScore: 1, detail: `${productImages} (aim for 3+)` }); }
+
+  // NEW: Srcset responsive images (1pt)
+  const srcsetImages = $("img[srcset], source[srcset]").length;
+  if (srcsetImages > 0) { score += 1; checks.push({ name: "Responsive images", passed: true, score: 1, maxScore: 1, detail: `${srcsetImages} with srcset` }); }
+  else { checks.push({ name: "Responsive images", passed: false, score: 0, maxScore: 1, detail: "No srcset" }); }
+
+  // NEW: Price format validation (1pt)
+  const priceInSchema = $('script[type="application/ld+json"]').text();
+  const hasCurrencyInPrice = priceInSchema.includes('"price":"$') || priceInSchema.includes('"price": "$') || priceInSchema.includes('"price":"£');
+  if (!hasCurrencyInPrice) { score += 1; checks.push({ name: "Price format clean", passed: true, score: 1, maxScore: 1, detail: "No currency symbols in price value" }); }
+  else { checks.push({ name: "Price format clean", passed: false, score: 0, maxScore: 1, detail: "Currency symbol in price value" }); recommendations.push("Remove currency symbols from price values in schema. Use numeric values only (29.99, not $29.99)."); }
+
+  // NEW: Product description length (1pt)
+  const metaDescLen = ($('meta[name="description"]').attr("content") || "").length;
+  const ogDescLen = ($('meta[property="og:description"]').attr("content") || "").length;
+  const bestDescLen = Math.max(metaDescLen, ogDescLen);
+  if (bestDescLen >= 100) { score += 1; checks.push({ name: "Description depth", passed: true, score: 1, maxScore: 1, detail: `${bestDescLen} chars` }); }
+  else { checks.push({ name: "Description depth", passed: false, score: 0, maxScore: 1, detail: `${bestDescLen} chars (aim for 100+)` }); }
+
+  // NEW: Structured data in head (1pt)
+  const sdInHead = $('head script[type="application/ld+json"]').length;
+  if (sdInHead > 0) { score += 1; checks.push({ name: "Schema in head", passed: true, score: 1, maxScore: 1, detail: `${sdInHead} blocks in head` }); }
+  else { checks.push({ name: "Schema in head", passed: false, score: 0, maxScore: 1, detail: "Not in head" }); }
+
+  // NEW: Unique title vs og:title (1pt)
+  const pageTitle = $("title").text().trim();
+  const ogTitle = $('meta[property="og:title"]').attr("content")?.trim() || "";
+  if (pageTitle && ogTitle && pageTitle !== ogTitle) { score += 1; checks.push({ name: "Unique title/og:title", passed: true, score: 1, maxScore: 1, detail: "Different" }); }
+  else { checks.push({ name: "Unique title/og:title", passed: false, score: 0, maxScore: 1, detail: pageTitle === ogTitle ? "Identical" : "Missing one" }); }
+
+  // NEW: Canonical matches current URL (1pt)
+  const canonical = $('link[rel="canonical"]').attr("href");
+  if (canonical) { score += 1; checks.push({ name: "Canonical URL set", passed: true, score: 1, maxScore: 1, detail: canonical.slice(0, 50) }); }
+  else { checks.push({ name: "Canonical URL set", passed: false, score: 0, maxScore: 1, detail: "Missing" }); }
+
+  // NEW: JSON-LD count (1pt)
+  const jsonLdCount = $('script[type="application/ld+json"]').length;
+  if (jsonLdCount >= 2) { score += 1; checks.push({ name: "Rich JSON-LD", passed: true, score: 1, maxScore: 1, detail: `${jsonLdCount} blocks` }); }
+  else { checks.push({ name: "Rich JSON-LD", passed: false, score: 0, maxScore: 1, detail: `${jsonLdCount} block(s)` }); }
+
+  // NEW: No duplicate H1 content (1pt)
+  const h1Texts = new Set<string>();
+  $("h1").each((_, el) => { h1Texts.add($(el).text().trim()); });
+  if (h1Texts.size === $("h1").length && h1Texts.size > 0) { score += 1; checks.push({ name: "Unique H1 content", passed: true, score: 1, maxScore: 1, detail: "All unique" }); }
+  else { checks.push({ name: "Unique H1 content", passed: false, score: 0, maxScore: 1, detail: h1Texts.size === 0 ? "No H1" : "Duplicates" }); }
+
   return { name: "Product Data Quality", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
 
@@ -541,6 +664,49 @@ function checkMachineAccessibility($: cheerio.CheerioAPI, headers: Record<string
     recommendations.push("Use semantic HTML elements (header, nav, main, article, footer). They help agents understand your page layout and find content faster.");
   }
 
+  // NEW: Compression (1pt)
+  const encoding = headers["content-encoding"] || "";
+  if (encoding.includes("gzip") || encoding.includes("br") || encoding.includes("deflate")) { score += 1; checks.push({ name: "Compression", passed: true, score: 1, maxScore: 1, detail: encoding }); findings.push(`Compression: ${encoding}`); }
+  else { checks.push({ name: "Compression", passed: false, score: 0, maxScore: 1, detail: "Not compressed" }); }
+
+  // NEW: Cache-Control (1pt)
+  if (headers["cache-control"]) { score += 1; checks.push({ name: "Cache-Control", passed: true, score: 1, maxScore: 1, detail: headers["cache-control"].slice(0, 40) }); }
+  else { checks.push({ name: "Cache-Control", passed: false, score: 0, maxScore: 1, detail: "Not set" }); }
+
+  // NEW: ETag (1pt)
+  if (headers["etag"]) { score += 1; checks.push({ name: "ETag caching", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "ETag caching", passed: false, score: 0, maxScore: 1, detail: "Not set" }); }
+
+  // NEW: X-Robots-Tag header (1pt)
+  const xRobots = headers["x-robots-tag"] || "";
+  if (!xRobots.includes("noindex")) { score += 1; checks.push({ name: "X-Robots-Tag", passed: true, score: 1, maxScore: 1, detail: xRobots || "Not set (good)" }); }
+  else { checks.push({ name: "X-Robots-Tag", passed: false, score: 0, maxScore: 1, detail: "noindex set" }); }
+
+  // NEW: Clean URL structure (1pt)
+  const hasCleanUrl = !url.includes("?sid=") && !url.includes("&session") && !url.includes("jsessionid");
+  if (hasCleanUrl) { score += 1; checks.push({ name: "Clean URLs", passed: true, score: 1, maxScore: 1, detail: "No session IDs" }); }
+  else { checks.push({ name: "Clean URLs", passed: false, score: 0, maxScore: 1, detail: "Session IDs in URL" }); }
+
+  // NEW: hreflang tags (1pt)
+  const hreflang = $('link[hreflang]').length;
+  if (hreflang > 0) { score += 1; findings.push(`${hreflang} hreflang tags`); checks.push({ name: "hreflang", passed: true, score: 1, maxScore: 1, detail: `${hreflang} languages` }); }
+  else { checks.push({ name: "hreflang", passed: false, score: 0, maxScore: 1, detail: "Not set" }); }
+
+  // NEW: Content-Type (1pt)
+  const ct = headers["content-type"] || "";
+  if (ct.includes("text/html") && ct.includes("utf-8")) { score += 1; checks.push({ name: "Content-Type", passed: true, score: 1, maxScore: 1, detail: "text/html; charset=utf-8" }); }
+  else { checks.push({ name: "Content-Type", passed: false, score: 0, maxScore: 1, detail: ct.slice(0, 40) || "Missing" }); }
+
+  // NEW: Meta charset (1pt)
+  const charset = $('meta[charset]').length > 0 || $('meta[http-equiv="content-type"]').length > 0;
+  if (charset) { score += 1; checks.push({ name: "Charset declaration", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Charset declaration", passed: false, score: 0, maxScore: 1, detail: "Missing" }); }
+
+  // NEW: Preconnect hints (1pt)
+  const preconnect = $('link[rel="preconnect"], link[rel="dns-prefetch"]').length;
+  if (preconnect > 0) { score += 1; checks.push({ name: "Preconnect hints", passed: true, score: 1, maxScore: 1, detail: `${preconnect} hints` }); }
+  else { checks.push({ name: "Preconnect hints", passed: false, score: 0, maxScore: 1, detail: "None" }); }
+
   return { name: "Machine Accessibility", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
 
@@ -609,6 +775,56 @@ function checkAgentCommerce($: cheerio.CheerioAPI): ScanCategory {
   } else {
     checks.push({ name: "Trust signals", passed: false, score: 0, maxScore: 2, detail: "None found" });
   }
+
+  // NEW: Variant selector (1pt)
+  const hasVariants = $('select[name*="variant"], select[name*="option"], [class*="variant"], [class*="swatch"], [data-option]').length > 0;
+  if (hasVariants) { score += 1; findings.push("Product variant selector found"); checks.push({ name: "Variant selector", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Variant selector", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Quantity input (1pt)
+  const hasQuantity = $('input[name*="quantity"], input[name*="qty"], [class*="quantity"]').length > 0;
+  if (hasQuantity) { score += 1; checks.push({ name: "Quantity input", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Quantity input", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Search functionality (1pt)
+  const hasSearch = $('form[action*="search"], input[name*="search"], input[name="q"], [class*="search-form"], [role="search"]').length > 0;
+  if (hasSearch) { score += 1; findings.push("Site search available"); checks.push({ name: "Search functionality", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Search functionality", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Payment icons visible (1pt)
+  const hasPaymentIcons = $('[class*="payment"], [alt*="visa"], [alt*="mastercard"], [alt*="paypal"], [alt*="apple-pay"], img[src*="payment"]').length > 0;
+  if (hasPaymentIcons) { score += 1; checks.push({ name: "Payment icons", passed: true, score: 1, maxScore: 1, detail: "Visible" }); }
+  else { checks.push({ name: "Payment icons", passed: false, score: 0, maxScore: 1, detail: "Not visible" }); }
+
+  // NEW: Live chat/support widget (1pt)
+  const hasChat = $('[class*="chat"], [id*="chat"], [class*="intercom"], [class*="zendesk"], [class*="tawk"], [class*="crisp"], [class*="drift"]').length > 0;
+  if (hasChat) { score += 1; findings.push("Live chat widget detected"); checks.push({ name: "Live chat", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Live chat", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Cross-sell/related products (1pt)
+  const hasCrossSell = $('[class*="related"], [class*="recommended"], [class*="also-like"], [class*="cross-sell"], [class*="upsell"]').length > 0;
+  if (hasCrossSell) { score += 1; checks.push({ name: "Related products", passed: true, score: 1, maxScore: 1, detail: "Section found" }); }
+  else { checks.push({ name: "Related products", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Share buttons (1pt)
+  const hasShare = $('[class*="share"], [data-share], a[href*="facebook.com/sharer"], a[href*="twitter.com/intent"], a[href*="pinterest.com/pin"]').length > 0;
+  if (hasShare) { score += 1; checks.push({ name: "Share buttons", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Share buttons", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Wishlist/save (1pt)
+  const hasWishlist = $('[class*="wishlist"], [class*="save-for-later"], [class*="favorite"], [data-wishlist]').length > 0;
+  if (hasWishlist) { score += 1; checks.push({ name: "Wishlist/save", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Wishlist/save", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Email signup/newsletter (1pt)
+  const hasNewsletter = $('[class*="newsletter"], [class*="subscribe"], input[name*="email"][type="email"]').length > 0;
+  if (hasNewsletter) { score += 1; checks.push({ name: "Newsletter signup", passed: true, score: 1, maxScore: 1, detail: "Present" }); }
+  else { checks.push({ name: "Newsletter signup", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
+
+  // NEW: Product specs/details section (1pt)
+  const hasSpecs = $('[class*="specification"], [class*="details"], [class*="features"], [class*="description"], [class*="product-info"]').length > 0;
+  if (hasSpecs) { score += 1; checks.push({ name: "Product details", passed: true, score: 1, maxScore: 1, detail: "Section found" }); }
+  else { checks.push({ name: "Product details", passed: false, score: 0, maxScore: 1, detail: "Not found" }); }
 
   return { name: "Agent Commerce Readiness", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
@@ -694,6 +910,53 @@ function checkPerformance(html: string, $: cheerio.CheerioAPI, responseTimeMs: n
     checks.push({ name: "Server-rendered content", passed: false, score: 0, maxScore: 4, detail: "Very little server-rendered content" });
     recommendations.push("Most of your page content appears to be loaded by JavaScript. AI agents that don't execute JavaScript will see a nearly empty page. Implement server-side rendering (SSR) for product content.");
   }
+
+  // NEW: CSS file count (1pt)
+  const cssFiles = $('link[rel="stylesheet"]').length;
+  if (cssFiles < 5) { score += 1; checks.push({ name: "CSS files", passed: true, score: 1, maxScore: 1, detail: `${cssFiles} files` }); }
+  else { checks.push({ name: "CSS files", passed: false, score: 0, maxScore: 1, detail: `${cssFiles} files (aim for <5)` }); }
+
+  // NEW: Font files (1pt)
+  const fontFiles = $('link[href*=".woff"], link[href*="fonts.googleapis"], link[href*="fonts.gstatic"]').length;
+  if (fontFiles <= 3) { score += 1; checks.push({ name: "Font files", passed: true, score: 1, maxScore: 1, detail: `${fontFiles} fonts` }); }
+  else { checks.push({ name: "Font files", passed: false, score: 0, maxScore: 1, detail: `${fontFiles} fonts (aim for <=3)` }); }
+
+  // NEW: Third-party script domains (1pt)
+  const scriptDomains = new Set<string>();
+  $("script[src]").each((_, el) => { const src = $(el).attr("src") || ""; if (src.startsWith("http")) { try { scriptDomains.add(new URL(src).hostname); } catch {} } });
+  if (scriptDomains.size < 8) { score += 1; checks.push({ name: "Third-party domains", passed: true, score: 1, maxScore: 1, detail: `${scriptDomains.size} domains` }); }
+  else { checks.push({ name: "Third-party domains", passed: false, score: 0, maxScore: 1, detail: `${scriptDomains.size} domains (too many)` }); }
+
+  // NEW: Inline style count (1pt)
+  const inlineStyles = $("[style]").length;
+  if (inlineStyles < 20) { score += 1; checks.push({ name: "Inline styles", passed: true, score: 1, maxScore: 1, detail: `${inlineStyles} elements` }); }
+  else { checks.push({ name: "Inline styles", passed: false, score: 0, maxScore: 1, detail: `${inlineStyles} elements (excessive)` }); }
+
+  // NEW: DOM element count (1pt)
+  const domElements = $("*").length;
+  if (domElements < 2000) { score += 1; findings.push(`DOM: ${domElements} elements`); checks.push({ name: "DOM size", passed: true, score: 1, maxScore: 1, detail: `${domElements} elements` }); }
+  else { checks.push({ name: "DOM size", passed: false, score: 0, maxScore: 1, detail: `${domElements} elements (heavy)` }); }
+
+  // NEW: Image optimization (1pt)
+  const webpImages = $('img[src*=".webp"], source[srcset*=".webp"]').length;
+  if (webpImages > 0) { score += 1; checks.push({ name: "WebP images", passed: true, score: 1, maxScore: 1, detail: `${webpImages} WebP` }); }
+  else { checks.push({ name: "WebP images", passed: false, score: 0, maxScore: 1, detail: "No WebP" }); }
+
+  // NEW: Defer/async scripts (1pt)
+  const deferAsync = $("script[defer], script[async]").length;
+  const totalScriptsAll = $("script[src]").length;
+  if (totalScriptsAll === 0 || deferAsync >= totalScriptsAll * 0.5) { score += 1; checks.push({ name: "Deferred scripts", passed: true, score: 1, maxScore: 1, detail: `${deferAsync}/${totalScriptsAll} deferred` }); }
+  else { checks.push({ name: "Deferred scripts", passed: false, score: 0, maxScore: 1, detail: `${deferAsync}/${totalScriptsAll} deferred` }); }
+
+  // NEW: Preload critical resources (1pt)
+  const preloads = $('link[rel="preload"]').length;
+  if (preloads > 0) { score += 1; checks.push({ name: "Preload hints", passed: true, score: 1, maxScore: 1, detail: `${preloads} preloaded` }); }
+  else { checks.push({ name: "Preload hints", passed: false, score: 0, maxScore: 1, detail: "None" }); }
+
+  // NEW: No document.write (1pt)
+  const hasDocWrite = html.includes("document.write");
+  if (!hasDocWrite) { score += 1; checks.push({ name: "No document.write", passed: true, score: 1, maxScore: 1, detail: "Clean" }); }
+  else { checks.push({ name: "No document.write", passed: false, score: 0, maxScore: 1, detail: "Found (blocks rendering)" }); }
 
   return { name: "Performance & Parsability", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
