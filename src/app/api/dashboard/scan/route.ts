@@ -9,16 +9,19 @@ import { getPlanConfig } from "@/lib/config";
 async function fireWebhooks(userId: string, event: string, payload: unknown) {
   try {
     const hooks = await query<{ url: string }>(
-      "SELECT url FROM webhooks WHERE user_id = $1 AND is_active = TRUE AND $2 = ANY(events)",
-      [userId, event]
+      "SELECT url FROM webhooks WHERE user_id = $1 AND is_active = TRUE",
+      [userId]
     );
-    for (const hook of hooks) {
-      fetch(hook.url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event, data: payload, timestamp: new Date().toISOString() }),
-      }).catch(() => {}); // Fire and forget
-    }
+    const body = JSON.stringify({ event, data: payload, timestamp: new Date().toISOString() });
+    await Promise.allSettled(
+      hooks.map(hook =>
+        fetch(hook.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        })
+      )
+    );
   } catch { /* webhooks are non-critical */ }
 }
 

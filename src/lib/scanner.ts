@@ -275,7 +275,7 @@ function checkStructuredData(html: string, $: cheerio.CheerioAPI): ScanCategory 
     checks.push({ name: "JSON-LD present", passed: true, score: 4, maxScore: 4, detail: `${jsonLdBlocks.length} blocks found` });
   } else {
     checks.push({ name: "JSON-LD present", passed: false, score: 0, maxScore: 4, detail: "No JSON-LD structured data" });
-    recommendations.push("Add JSON-LD structured data to your pages. This is the primary way AI shopping agents understand your products, prices, and availability.");
+    recommendations.push("Add product data that AI can read. Right now, AI shopping bots like Google and ChatGPT cannot see your product details. Your developer needs to add a small code block (called structured data) to each page. We provide the exact code to copy and paste.");
   }
 
   // Product schema + field validation (10pts)
@@ -293,7 +293,7 @@ function checkStructuredData(html: string, $: cheerio.CheerioAPI): ScanCategory 
     checks.push({ name: "Product schema quality", passed: fieldScore >= 7, score: fieldScore, maxScore: 10, detail: `${fieldScore}/10 fields present` });
   } else if (jsonLdBlocks.length > 0) {
     checks.push({ name: "Product schema quality", passed: false, score: 0, maxScore: 10, detail: "No Product type found" });
-    recommendations.push("Add Product structured data (JSON-LD) with name, price, availability, and image. Without this, AI agents can't understand what you sell.");
+    recommendations.push("Add product info that AI can read. Your product pages need a hidden code block that lists the product name, price, stock status, and images in a format AI bots understand. We give you the exact code for your platform.");
   }
 
   // Organization/WebSite schema (3pts)
@@ -303,7 +303,7 @@ function checkStructuredData(html: string, $: cheerio.CheerioAPI): ScanCategory 
     checks.push({ name: "Organization schema", passed: true, score: 3, maxScore: 3, detail: "Present" });
   } else {
     checks.push({ name: "Organization schema", passed: false, score: 0, maxScore: 3, detail: "Missing" });
-    recommendations.push("Add Organization schema with your store name, logo, and contact info. This helps agents identify your brand.");
+    recommendations.push("Add your business info in a format AI can read. This tells Google and ChatGPT your store name, logo, and how to contact you. Takes 5 minutes to set up.");
   }
 
   // BreadcrumbList (2pts)
@@ -313,7 +313,7 @@ function checkStructuredData(html: string, $: cheerio.CheerioAPI): ScanCategory 
     checks.push({ name: "Breadcrumb schema", passed: true, score: 2, maxScore: 2, detail: "Present" });
   } else {
     checks.push({ name: "Breadcrumb schema", passed: false, score: 0, maxScore: 2, detail: "Missing" });
-    recommendations.push("Add BreadcrumbList schema so agents understand your site hierarchy and navigation paths.");
+    recommendations.push("Add breadcrumb navigation data. This helps AI bots understand how your site is organized (Home > Category > Product). Makes your products easier to find.");
   }
 
   // Microdata (2pts)
@@ -419,7 +419,7 @@ function checkProductData($: cheerio.CheerioAPI, url: string): ScanCategory {
     recommendations.push("Your meta description is too short. Expand it to 120-160 characters with product details that help agents understand the page.");
   } else {
     checks.push({ name: "Meta description", passed: false, score: 0, maxScore: 4, detail: "Missing" });
-    recommendations.push("Add a meta description to this page. AI agents use it to understand what the page is about before processing the full HTML.");
+    recommendations.push("Add a page description. Every page needs a short summary (1-2 sentences) that tells search engines and AI what the page is about. Look for a 'meta description' field in your platform settings.");
   }
 
   // Price signals (5pts)
@@ -435,7 +435,7 @@ function checkProductData($: cheerio.CheerioAPI, url: string): ScanCategory {
     score += 2;
     findings.push("Price elements found in HTML but not in meta tags");
     checks.push({ name: "Price meta tags", passed: false, score: 2, maxScore: 5, detail: "Prices in HTML only, not in meta tags" });
-    recommendations.push("Add og:price:amount and og:price:currency meta tags. Your prices are visible in the HTML but not in a format AI agents can reliably read.");
+    recommendations.push("Make your prices machine-readable. Your prices show up on the page but AI bots can't read them reliably. Your developer needs to add price meta tags to the page header. We provide the code.");
   } else {
     checks.push({ name: "Price meta tags", passed: false, score: 0, maxScore: 5, detail: "No price signals found" });
     recommendations.push("No product prices were found in the HTML or meta tags. If this is a product page, prices may be loaded by JavaScript, which many AI agents can't execute.");
@@ -580,7 +580,7 @@ function checkMachineAccessibility($: cheerio.CheerioAPI, headers: Record<string
     checks.push({ name: "HTTPS", passed: true, score: 3, maxScore: 3, detail: "Secure connection" });
   } else {
     checks.push({ name: "HTTPS", passed: false, score: 0, maxScore: 3, detail: "Not using HTTPS" });
-    recommendations.push("Switch to HTTPS. AI agents and browsers flag insecure sites, and some agents refuse to interact with HTTP-only stores.");
+    recommendations.push("Switch your site to HTTPS (the secure version). Most hosting providers offer this for free. Without it, browsers show a 'Not Secure' warning and AI shopping bots may skip your store entirely.");
   }
 
   // Canonical URL (3pts)
@@ -625,7 +625,7 @@ function checkMachineAccessibility($: cheerio.CheerioAPI, headers: Record<string
     checks.push({ name: "Sitemap", passed: true, score: 3, maxScore: 3, detail: "Accessible" });
   } else {
     checks.push({ name: "Sitemap", passed: false, score: 0, maxScore: 3, detail: "Not found" });
-    recommendations.push("Your sitemap.xml is missing or not accessible. AI agents use sitemaps to discover all your product pages. This is one of the most impactful fixes you can make.");
+    recommendations.push("Create a sitemap file. A sitemap is like a directory of all your pages that helps AI bots find every product you sell. Shopify creates one automatically. For other platforms, your developer can generate one in minutes.");
   }
 
   // robots.txt (1pt)
