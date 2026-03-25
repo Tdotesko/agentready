@@ -34,7 +34,7 @@ export interface ActionItem {
 
 export type Platform = "shopify" | "woocommerce" | "bigcommerce" | "magento" | "squarespace" | "wix" | "custom" | "unknown";
 
-const MAX_PAGES = 12;
+const DEFAULT_MAX_PAGES = 50;
 const CRAWL_TIMEOUT = 10000;
 
 /* ─── Platform Detection ─── */
@@ -531,7 +531,7 @@ function estimateFixTime(actionPlan: ActionItem[]): string {
 }
 
 /* ═══ Deep Scan ═══ */
-export async function deepScan(rawUrl: string): Promise<DeepScanResult> {
+export async function deepScan(rawUrl: string, maxPages: number = DEFAULT_MAX_PAGES): Promise<DeepScanResult> {
   const startTime = Date.now();
   const rootUrl = validateAndNormalizeUrl(rawUrl);
 
@@ -541,27 +541,31 @@ export async function deepScan(rawUrl: string): Promise<DeepScanResult> {
   const links = discoverLinks(homepageHtml, rootUrl);
 
   // 2. If few product pages found, try sitemap as fallback
-  let productPages = links.products.slice(0, 8);
-  if (productPages.length < 3) {
+  const productSliceLimit = Math.max(8, Math.floor(maxPages * 0.7));
+  let productPages = links.products.slice(0, productSliceLimit);
+  if (productPages.length < 5) {
     const sitemapUrls = await discoverFromSitemap(rootUrl);
     const sitemapProducts = sitemapUrls.filter(u => classifyUrl(u) === "product");
     const sitemapCollections = sitemapUrls.filter(u => classifyUrl(u) === "collection");
-    // Merge sitemap results with link discovery
     for (const u of sitemapProducts) { if (!productPages.includes(u)) productPages.push(u); }
     for (const u of sitemapCollections) { if (!links.collections.includes(u)) links.collections.push(u); }
-    productPages = productPages.slice(0, 8);
+    productPages = productPages.slice(0, productSliceLimit);
   }
 
-  // 3. Build scan list
+  // 3. Build scan list (distribute pages: 70% products, 20% collections, 10% other)
+  const productLimit = Math.max(3, Math.floor(maxPages * 0.7));
+  const collectionLimit = Math.max(2, Math.floor(maxPages * 0.2));
+  const otherLimit = Math.max(1, Math.floor(maxPages * 0.1));
+
   const toScan: string[] = [rootUrl];
-  toScan.push(...productPages.slice(0, 6));
-  toScan.push(...links.collections.slice(0, 3));
-  toScan.push(...links.other.slice(0, 2));
-  const uniqueUrls = [...new Set(toScan)].slice(0, MAX_PAGES);
+  toScan.push(...productPages.slice(0, productLimit));
+  toScan.push(...links.collections.slice(0, collectionLimit));
+  toScan.push(...links.other.slice(0, otherLimit));
+  const uniqueUrls = [...new Set(toScan)].slice(0, maxPages);
 
   // 4. Scan all pages (batched, resilient)
   const pages: PageResult[] = [];
-  const batchSize = 4;
+  const batchSize = maxPages > 50 ? 6 : 4;
   for (let i = 0; i < uniqueUrls.length; i += batchSize) {
     const batch = uniqueUrls.slice(i, i + batchSize);
     const results = await Promise.allSettled(

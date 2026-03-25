@@ -4,6 +4,7 @@ import { deepScan } from "@/lib/deep-scanner";
 import { saveScan } from "@/lib/users";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { query } from "@/lib/db";
+import { getPlanConfig } from "@/lib/config";
 
 async function fireWebhooks(userId: string, event: string, payload: unknown) {
   try {
@@ -38,7 +39,8 @@ export async function POST(req: NextRequest) {
   if (!url || typeof url !== "string" || url.length > 2048) return NextResponse.json({ error: "Valid URL required." }, { status: 400 });
 
   try {
-    const result = await deepScan(url);
+    const planConfig = getPlanConfig(user.plan || undefined, user.isAdmin);
+    const result = await deepScan(url, planConfig.pages);
 
     await saveScan({
       userId: user.id,

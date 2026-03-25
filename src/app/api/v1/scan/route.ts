@@ -3,6 +3,7 @@ import { validateApiKey } from "@/lib/api-keys";
 import { hasActiveSub } from "@/lib/auth";
 import { deepScan } from "@/lib/deep-scanner";
 import { saveScan } from "@/lib/users";
+import { getPlanConfig } from "@/lib/config";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
   if (!url || typeof url !== "string") return NextResponse.json({ error: "url field required." }, { status: 400 });
 
   try {
-    const result = await deepScan(url);
+    const planConfig = getPlanConfig(user.plan || undefined, user.isAdmin);
+    const result = await deepScan(url, planConfig.pages);
 
     await saveScan({
       userId: user.id,

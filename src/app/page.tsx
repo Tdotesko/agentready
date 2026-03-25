@@ -452,13 +452,13 @@ export default function Home() {
               </div>
               <div className="grid sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
                 <Tier name="Growth" price="$49" plan="growth" desc="For store owners optimizing for AI"
-                  features={["Multi-page deep scan (12 pages)", "Up to 5 stores", "Platform-specific fix code", "Priority-ranked action plan", "Downloadable HTML reports", "Weekly rescans"]}
+                  features={["Deep scan up to 50 pages", "Up to 5 stores", "Platform-specific fix code", "Priority-ranked action plan", "Downloadable reports", "Weekly auto-rescans"]}
                   cta="Get started" />
                 <Tier name="Business" price="$149" plan="business" desc="For serious sellers and teams" pop
-                  features={["Everything in Growth", "Up to 25 stores", "Competitor comparison scans", "Score history tracking", "Daily automated monitoring", "Email alerts on score changes"]}
+                  features={["Deep scan up to 150 pages", "Up to 25 stores", "10 competitor comparisons/mo", "Daily auto-rescans", "Webhook notifications", "Score change email alerts"]}
                   cta="Get started" />
                 <Tier name="Enterprise" price="$399" plan="enterprise" desc="For agencies managing client stores"
-                  features={["Everything in Business", "Unlimited stores", "White-label PDF reports", "Bulk scanning API", "Team seats and client dashboard", "Priority support"]}
+                  features={["Deep scan up to 500 pages", "Unlimited stores", "Unlimited comparisons", "REST API with API keys", "White-label reports", "Hourly monitoring + webhooks"]}
                   cta="Get started" />
               </div>
             </section>
