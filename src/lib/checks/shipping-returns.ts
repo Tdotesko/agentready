@@ -99,6 +99,11 @@ export function checkShippingReturns(ctx: CheckContext): ScanCategory {
   if (hasIntl) { checks.push(check("International shipping", true, 0, 0, "Mentioned")); findings.push("International shipping mentioned"); }
   else { checks.push(check("International shipping", false, 0, 0, "Not mentioned")); }
 
+  // Satisfaction guarantee
+  const hasGuarantee = ctx.html.toLowerCase().includes("satisfaction guarantee") || ctx.html.toLowerCase().includes("money back") || ctx.html.toLowerCase().includes("money-back");
+  if (hasGuarantee) { checks.push(check("Satisfaction guarantee", true, 0, 0, "Mentioned")); findings.push("Satisfaction guarantee mentioned"); }
+  else { checks.push(check("Satisfaction guarantee", false, 0, 0, "Not mentioned")); }
+
   // Free shipping indicator in HTML
   const freeShipping = ctx.$('[class*="free-shipping"]').length > 0 || ctx.html.toLowerCase().includes("free shipping");
   if (freeShipping) {
