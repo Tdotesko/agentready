@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { validateAndNormalizeUrl } from "./validate-url";
+import { checkUCPProtocol, checkOpenAIFeedReadiness, checkACPProtocol, checkAIDiscoverability, checkSecurityTrust, checkShippingReturns, checkIdentifiersTaxonomy } from "./checks";
 
 export interface SubCheck {
   name: string;
@@ -725,12 +726,27 @@ export async function scanStore(rawUrl: string): Promise<ScanResult> {
 
     const $ = cheerio.load(html);
 
+    const ctx = { html, $, url: normalizedUrl, headers, responseTimeMs, signal: controller.signal };
+
+    // Run all 12 categories (existing 5 + 7 new modules)
+    const [ucpResult, aiDiscoveryResult] = await Promise.all([
+      checkUCPProtocol(ctx).catch(() => ({ name: "UCP Protocol", score: 0, maxScore: 25, status: "fail" as const, findings: [], recommendations: ["UCP check failed"], checks: [] })),
+      checkAIDiscoverability(ctx).catch(() => ({ name: "AI Discoverability", score: 0, maxScore: 20, status: "fail" as const, findings: [], recommendations: ["AI discovery check failed"], checks: [] })),
+    ]);
+
     const categories = [
       checkStructuredData(html, $),
       checkProductData($, normalizedUrl),
       checkMachineAccessibility($, headers, hasSitemap, hasRobotsTxt, normalizedUrl),
       checkAgentCommerce($),
       checkPerformance(html, $, responseTimeMs),
+      ucpResult,
+      checkOpenAIFeedReadiness(ctx),
+      checkACPProtocol(ctx),
+      aiDiscoveryResult,
+      checkSecurityTrust(ctx),
+      checkShippingReturns(ctx),
+      checkIdentifiersTaxonomy(ctx),
     ];
 
     const totalScore = categories.reduce((sum, c) => sum + c.score, 0);
