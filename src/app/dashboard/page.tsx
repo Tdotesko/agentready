@@ -210,6 +210,7 @@ function DashboardInner() {
   const [scanUrl, setScanUrl] = useState("");
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [scanStep, setScanStep] = useState(0);
   const [viewResult, setViewResult] = useState<DeepScanResult | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "actions" | "pages" | "compare">("overview");
   const [portalLoading, setPortalLoading] = useState(false);
@@ -280,16 +281,20 @@ function DashboardInner() {
     return () => clearInterval(interval);
   }, [justUpgraded, isActive, loadData]);
 
+  const scanSteps = ["Connecting to store", "Crawling pages", "Analyzing product data", "Checking AI readiness", "Running 195 checks", "Building your report"];
+
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
     if (!scanUrl.trim() || scanning) return;
-    setScanning(true); setScanError(""); setViewResult(null);
+    setScanning(true); setScanError(""); setViewResult(null); setScanStep(0);
+    const stepInterval = setInterval(() => setScanStep(s => Math.min(s + 1, scanSteps.length - 1)), 2500);
     try {
       const res = await fetch("/api/dashboard/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: scanUrl.trim() }) });
+      clearInterval(stepInterval);
       const data = await res.json();
       if (!res.ok) { setScanError(data.error); return; }
       setViewResult(data); setActiveTab("overview"); setScanUrl(""); setActionsVisible(10); loadData();
-    } catch { setScanError("Scan failed."); }
+    } catch { setScanError("Scan failed."); clearInterval(stepInterval); }
     finally { setScanning(false); }
   }
 
@@ -517,6 +522,22 @@ function DashboardInner() {
                 </form>
                 {scanError && <p className="text-sm text-[var(--red)] mt-3 bg-[var(--red-soft)] rounded-lg px-4 py-2">{scanError}</p>}
               </div>
+
+              {/* Scanning animation */}
+              {scanning && (
+                <div className="surface rounded-2xl p-6 mb-6 fade-up">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-8 h-8 border-3 border-[var(--accent)] border-t-transparent rounded-full animate-spin shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-white">{scanSteps[scanStep]}...</p>
+                      <p className="text-xs text-[var(--text-dim)]">This usually takes 10-30 seconds</p>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
+                    <div className="h-full bg-[var(--accent)] rounded-full transition-all duration-500" style={{ width: `${((scanStep + 1) / scanSteps.length) * 100}%` }} />
+                  </div>
+                </div>
+              )}
 
               {/* Stats below scanner */}
               {scans.length > 0 && (

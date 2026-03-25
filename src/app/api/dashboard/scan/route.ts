@@ -6,21 +6,41 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { query } from "@/lib/db";
 import { getPlanConfig } from "@/lib/config";
 
-async function fireWebhooks(userId: string, event: string, payload: unknown) {
+async function fireWebhooks(userId: string, event: string, payload: Record<string, unknown>) {
   try {
     const hooks = await query<{ url: string }>(
       "SELECT url FROM webhooks WHERE user_id = $1 AND is_active = TRUE",
       [userId]
     );
-    const body = JSON.stringify({ event, data: payload, timestamp: new Date().toISOString() });
+
     await Promise.allSettled(
-      hooks.map(hook =>
-        fetch(hook.url, {
+      hooks.map(hook => {
+        let body: string;
+
+        // Format for Discord webhooks
+        if (hook.url.includes("discord.com/api/webhooks")) {
+          const score = Number(payload.score) || 0;
+          const color = score >= 72 ? 0x22c55e : score >= 58 ? 0xeab308 : 0xef4444;
+          body = JSON.stringify({
+            embeds: [{
+              title: `Scan Complete: ${payload.url}`,
+              description: `**Score: ${payload.score}/100** (${payload.grade})\nPlatform: ${payload.platform}\nPages scanned: ${payload.totalPages}\nIssues found: ${payload.issues}`,
+              color,
+              footer: { text: "CartParse" },
+              timestamp: new Date().toISOString(),
+            }],
+          });
+        } else {
+          // Standard webhook format for other services
+          body = JSON.stringify({ event, data: payload, timestamp: new Date().toISOString() });
+        }
+
+        return fetch(hook.url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body,
-        })
-      )
+        });
+      })
     );
   } catch { /* webhooks are non-critical */ }
 }
