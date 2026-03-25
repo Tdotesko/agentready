@@ -226,6 +226,7 @@ function DashboardInner() {
   const [compResult, setCompResult] = useState<Record<string, unknown> | null>(null);
   const [compError, setCompError] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [actionsVisible, setActionsVisible] = useState(10);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
@@ -287,7 +288,7 @@ function DashboardInner() {
       const res = await fetch("/api/dashboard/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: scanUrl.trim() }) });
       const data = await res.json();
       if (!res.ok) { setScanError(data.error); return; }
-      setViewResult(data); setActiveTab("overview"); setScanUrl(""); loadData();
+      setViewResult(data); setActiveTab("overview"); setScanUrl(""); setActionsVisible(10); loadData();
     } catch { setScanError("Scan failed."); }
     finally { setScanning(false); }
   }
@@ -799,51 +800,95 @@ function DashboardInner() {
 
           {/* ═══ SCAN RESULT VIEW ═══ */}
           {viewResult && (
-            <div className="fade-up">
-              <button onClick={() => setViewResult(null)} className="text-xs text-[var(--text-dim)] hover:text-[var(--text-secondary)] cursor-pointer mb-4">&larr; Back</button>
+            <div className="fade-up space-y-4">
+              <button onClick={() => setViewResult(null)} className="text-xs text-[var(--text-dim)] hover:text-[var(--text-secondary)] cursor-pointer">&larr; Back to dashboard</button>
 
               {/* Score header */}
-              <div className="surface rounded-xl p-6 mb-4">
+              <div className="surface rounded-2xl p-6">
                 <div className="flex flex-col sm:flex-row items-start gap-6">
                   <div className="text-center shrink-0">
-                    <div className="text-4xl font-mono font-bold" style={{ color: viewResult.overallScore >= 75 ? "var(--green)" : viewResult.overallScore >= 45 ? "var(--yellow)" : "var(--red)" }}>{viewResult.overallScore}</div>
-                    <div className="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1">{viewResult.grade}</div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-mono text-[var(--text-secondary)] break-all mb-2">{viewResult.rootUrl}</p>
-                    <div className="flex flex-wrap gap-3 text-[11px] text-[var(--text-dim)]">
-                      <span className="px-2 py-0.5 rounded bg-[rgba(255,255,255,0.04)]">{viewResult.totalPages} pages</span>
-                      <span className="px-2 py-0.5 rounded bg-[var(--accent-soft)] text-[var(--accent)]">{PLATFORM_LABELS[viewResult.platform]}</span>
-                      <span className="px-2 py-0.5 rounded bg-[rgba(255,255,255,0.04)]">{viewResult.actionPlan.length} issues</span>
-                      <span className="px-2 py-0.5 rounded bg-[rgba(255,255,255,0.04)]">~{totalEstimatedGain} pts recoverable</span>
+                    <div className="w-24 h-24 rounded-2xl bg-[var(--bg)] flex flex-col items-center justify-center">
+                      <p className="text-3xl font-mono font-bold" style={{ color: viewResult.overallScore >= 72 ? "var(--green)" : viewResult.overallScore >= 58 ? "var(--yellow)" : "var(--red)" }}>{viewResult.overallScore}</p>
+                      <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-widest">{viewResult.grade}</p>
                     </div>
                   </div>
-                  <button onClick={handleExport} className="px-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-light)] text-xs text-[var(--text)] hover:bg-[rgba(255,255,255,0.06)] transition cursor-pointer shrink-0">Export</button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-lg font-semibold text-white mb-1">{viewResult.rootUrl}</p>
+                    <div className="flex flex-wrap gap-2 text-[10px] mb-3">
+                      <span className="px-2.5 py-1 rounded-lg bg-[var(--accent-soft)] border border-[var(--accent-border)] text-[var(--accent)] font-medium">{PLATFORM_LABELS[viewResult.platform]}</span>
+                      <span className="px-2.5 py-1 rounded-lg bg-[rgba(255,255,255,0.04)] text-[var(--text-dim)]">{viewResult.totalPages} pages scanned</span>
+                      <span className="px-2.5 py-1 rounded-lg bg-[rgba(255,255,255,0.04)] text-[var(--text-dim)]">{viewResult.actionPlan.length} things to fix</span>
+                    </div>
+                    {viewResult.overallScore < 58 && <p className="text-sm text-[var(--red)]">Your store has major gaps that AI shopping bots will notice. Fix the top issues below to see the biggest improvement.</p>}
+                    {viewResult.overallScore >= 58 && viewResult.overallScore < 72 && <p className="text-sm text-[var(--yellow)]">Your store is partially ready for AI shopping. There are important things to improve below.</p>}
+                    {viewResult.overallScore >= 72 && <p className="text-sm text-[var(--green)]">Your store is well set up for AI shopping bots. Keep improving the areas below.</p>}
+                  </div>
+                  <button onClick={handleExport} className="px-4 py-2.5 rounded-xl btn-secondary text-xs cursor-pointer shrink-0">Download report</button>
                 </div>
-                <div className="mt-5"><CategoryBars categories={viewResult.aggregatedCategories} /></div>
+              </div>
+
+              {/* Categories overview */}
+              <div className="surface rounded-2xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-[var(--border)]">
+                  <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest">How your store scores in each area</p>
+                </div>
+                {viewResult.aggregatedCategories.map((cat, i) => {
+                  const pct = cat.maxScore > 0 ? Math.round((cat.score / cat.maxScore) * 100) : 0;
+                  const color = pct >= 70 ? "var(--green)" : pct >= 40 ? "var(--yellow)" : "var(--red)";
+                  return (
+                    <div key={i} className="px-5 py-3 flex items-center gap-4 border-b border-[var(--border)] last:border-0">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                      <span className="text-sm text-[var(--text)] flex-1">{cat.name}</span>
+                      <div className="w-24 h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                      </div>
+                      <span className="text-xs font-mono text-[var(--text-dim)] w-10 text-right">{pct}%</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Tabs */}
-              <div className="flex gap-1 mb-4 bg-[var(--bg-raised)] rounded-lg p-1 w-fit">
+              <div className="flex gap-1 bg-[var(--bg-raised)] rounded-xl p-1 w-fit">
                 {(["overview", "actions", "pages"] as const).map((tab) => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${activeTab === tab ? "bg-[var(--bg-elevated)] text-white" : "text-[var(--text-dim)] hover:text-[var(--text-secondary)]"}`}>
-                    {tab === "overview" ? "Quick Wins" : tab === "actions" ? `All Fixes (${viewResult.actionPlan.length})` : "Pages"}
+                    className={`px-4 py-2 rounded-lg text-xs font-medium transition cursor-pointer ${activeTab === tab ? "bg-[var(--bg-elevated)] text-white" : "text-[var(--text-dim)] hover:text-[var(--text-secondary)]"}`}>
+                    {tab === "overview" ? "Top Priorities" : tab === "actions" ? `All Fixes (${viewResult.actionPlan.length})` : `Pages (${viewResult.pages.length})`}
                   </button>
                 ))}
               </div>
 
               {activeTab === "overview" && (
-                <div className="surface rounded-xl p-5">
-                  {viewResult.actionPlan.filter(a => a.impact === "high").slice(0, 5).map((a, i) => <ActionRow key={i} item={a} index={i} />)}
-                  {viewResult.actionPlan.filter(a => a.impact === "high").length === 0 && (
-                    <p className="text-sm text-[var(--text-dim)] py-6 text-center">No high-impact issues. Check the full list for smaller improvements.</p>
+                <div className="surface rounded-2xl overflow-hidden">
+                  <div className="px-5 py-3 border-b border-[var(--border)]">
+                    <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest">Fix these first for the biggest improvement</p>
+                  </div>
+                  {viewResult.actionPlan.filter(a => a.impact === "high").length === 0 ? (
+                    <div className="px-5 py-8 text-center">
+                      <p className="text-sm text-[var(--green)] font-medium mb-1">No critical issues found</p>
+                      <p className="text-xs text-[var(--text-dim)]">Check the &quot;All Fixes&quot; tab for smaller improvements you can still make.</p>
+                    </div>
+                  ) : (
+                    viewResult.actionPlan.filter(a => a.impact === "high").slice(0, 5).map((a, i) => <ActionRow key={i} item={a} index={i} />)
                   )}
                 </div>
               )}
               {activeTab === "actions" && (
-                <div className="surface rounded-xl px-4">
-                  {viewResult.actionPlan.map((a, i) => <ActionRow key={i} item={a} index={i} />)}
+                <div className="surface rounded-2xl overflow-hidden">
+                  <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
+                    <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest">Everything to fix, sorted by importance</p>
+                    <p className="text-xs text-[var(--text-dim)]">Showing {Math.min(actionsVisible, viewResult.actionPlan.length)} of {viewResult.actionPlan.length}</p>
+                  </div>
+                  <div className="px-4">
+                    {viewResult.actionPlan.slice(0, actionsVisible).map((a, i) => <ActionRow key={i} item={a} index={i} />)}
+                  </div>
+                  {actionsVisible < viewResult.actionPlan.length && (
+                    <div className="px-5 py-3 border-t border-[var(--border)] text-center">
+                      <button onClick={() => setActionsVisible(v => v + 15)} className="text-xs text-[var(--accent)] hover:underline cursor-pointer">
+                        Show {Math.min(15, viewResult.actionPlan.length - actionsVisible)} more fixes
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === "pages" && <PageBreakdown result={viewResult} />}
@@ -868,7 +913,7 @@ function DashboardInner() {
                 ) : (
                   <div className="divide-y divide-[var(--border)]">
                     {scans.map((scan, i) => (
-                      <button key={i} onClick={() => { try { setViewResult(JSON.parse(scan.resultJson)); setActiveTab("overview"); } catch {} }}
+                      <button key={i} onClick={() => { try { setViewResult(JSON.parse(scan.resultJson)); setActiveTab("overview"); setActionsVisible(10); } catch {} }}
                         className="w-full px-5 py-3.5 flex items-center gap-4 hover:bg-[rgba(255,255,255,0.02)] transition cursor-pointer text-left">
                         <span className="text-xl font-mono font-bold tabular-nums w-12" style={{ color: scan.score >= 75 ? "var(--green)" : scan.score >= 45 ? "var(--yellow)" : "var(--red)" }}>{scan.score}</span>
                         <div className="flex-1 min-w-0">
