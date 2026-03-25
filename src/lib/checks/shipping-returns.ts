@@ -114,5 +114,15 @@ export function checkShippingReturns(ctx: CheckContext): ScanCategory {
     checks.push(check("Free shipping signal", false, 0, 2, "Not detected"));
   }
 
+  // Warranty/guarantee in schema
+  const hasWarranty = jsonLdBlocks.some(b => !!(b as Record<string, unknown>).warranty);
+  if (hasWarranty) { checks.push(check("Warranty info", true, 0, 0, "In schema")); findings.push("Warranty information in structured data"); }
+  else { checks.push(check("Warranty info", false, 0, 0, "Not in schema")); }
+
+  // Price match guarantee
+  const hasPriceMatch = ctx.html.toLowerCase().includes("price match") || ctx.html.toLowerCase().includes("best price");
+  if (hasPriceMatch) { checks.push(check("Price match policy", true, 0, 0, "Mentioned")); }
+  else { checks.push(check("Price match policy", false, 0, 0, "Not mentioned")); }
+
   return { name: "Return & Shipping", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }

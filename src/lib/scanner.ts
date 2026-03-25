@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { validateAndNormalizeUrl } from "./validate-url";
-import { checkUCPProtocol, checkOpenAIFeedReadiness, checkACPProtocol, checkAIDiscoverability, checkSecurityTrust, checkShippingReturns, checkIdentifiersTaxonomy } from "./checks";
+import { checkUCPProtocol, checkOpenAIFeedReadiness, checkACPProtocol, checkAIDiscoverability, checkSecurityTrust, checkShippingReturns, checkIdentifiersTaxonomy, checkAccessibility } from "./checks";
 
 export interface SubCheck {
   name: string;
@@ -1010,6 +1010,7 @@ export async function scanStore(rawUrl: string): Promise<ScanResult> {
       checkSecurityTrust(ctx),
       checkShippingReturns(ctx),
       checkIdentifiersTaxonomy(ctx),
+      checkAccessibility(ctx),
     ];
 
     const totalScore = categories.reduce((sum, c) => sum + c.score, 0);

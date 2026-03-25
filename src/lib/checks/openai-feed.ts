@@ -120,5 +120,24 @@ export function checkOpenAIFeedReadiness(ctx: CheckContext): ScanCategory {
     checks.push(check("Data freshness", false, 0, 1, "No last-modified header"));
   }
 
+  // 17. Price is numeric (no symbols)
+  const priceVal = offers?.price || offers?.lowPrice;
+  if (priceVal && !String(priceVal).match(/[^0-9.]/)) { checks.push(check("Numeric price", true, 0, 0, String(priceVal))); }
+  else if (priceVal) { checks.push(check("Numeric price", false, 0, 0, `"${priceVal}" contains non-numeric chars`)); recommendations.push("Price values in schema should be numeric only (e.g. 29.99, not $29.99)."); }
+  else { checks.push(check("Numeric price", false, 0, 0, "No price")); }
+
+  // 18. Availability is valid schema.org URL
+  const avail = String(offers?.availability || "");
+  if (avail.startsWith("https://schema.org/")) { checks.push(check("Valid availability URL", true, 0, 0, avail.split("/").pop() || "Set")); }
+  else if (avail) { checks.push(check("Valid availability URL", false, 0, 0, `"${avail}" (should be schema.org URL)`)); }
+  else { checks.push(check("Valid availability URL", false, 0, 0, "Missing")); }
+
+  // 19. Product URL matches canonical
+  const canonical = ctx.$('link[rel="canonical"]').attr("href");
+  const productUrl = String(p.url || "");
+  if (productUrl && canonical && (productUrl === canonical || productUrl.includes(canonical) || canonical.includes(productUrl))) { checks.push(check("URL matches canonical", true, 0, 0, "Consistent")); }
+  else if (productUrl || canonical) { checks.push(check("URL matches canonical", false, 0, 0, "Mismatch or missing")); }
+  else { checks.push(check("URL matches canonical", false, 0, 0, "Both missing")); }
+
   return { name: "OpenAI Feed Ready", score: Math.min(score, maxScore), maxScore, status: categoryStatus(score, maxScore), findings, recommendations, checks };
 }
